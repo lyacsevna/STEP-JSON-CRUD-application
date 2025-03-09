@@ -5,8 +5,47 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:STEP_JSON_Application_for_ASKON"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="900">
+        Title="Главное меню" Height="450" Width="900">
 	<Grid>
-		
+		<Grid.ColumnDefinitions>
+			<ColumnDefinition Width="250"/>
+			<ColumnDefinition Width="*"/>
+			<ColumnDefinition Width="300"/>
+		</Grid.ColumnDefinitions>
+
+		<StackPanel Grid.Column="0" Margin="10" x:Name="LeftPanel">
+			<Button Content="Импорт файла" Margin="5" MinHeight="30" x:Name="ImportButton"/>
+			<Button Content="Экспорт файла" Margin="5" MinHeight="30" x:Name="ExportButton"/>
+			<TextBlock Text="Загруженные файлы" Margin="5" FontWeight="Bold"/>
+			<ListBox Margin="5" Height="200" x:Name="LoadedFilesListBox">
+				<ListBoxItem Content="АБВГ123456.001"/>
+				<ListBoxItem Content="ЕКУП301527.001"/>
+				<ListBoxItem Content="АБВГ721521.006"/>
+				<ListBoxItem Content="Шаблон 12.01.08.x"/>
+			</ListBox>
+			<Button Content="Документация" Margin="5" MinHeight="30" x:Name="DocumentationButton"/>
+			<Button Content="Выход" Margin="5" MinHeight="30" x:Name="ExitButton"/>
+		</StackPanel>
+
+		<Grid Grid.Column="1" Margin="10" x:Name="MainGrid">
+			<TabControl x:Name="MainTabControl">
+				<TabItem Header="STEP-JSON" x:Name="StepJsonTab"/>
+				<TabItem Header="ТЕКСТ" x:Name="TextTab"/>
+				<TabItem Header="СХЕМА" x:Name="SchemaTab"/>
+			</TabControl>
+
+			<TextBlock Text="Выберите файл" HorizontalAlignment="Center" VerticalAlignment="Center" x:Name="SelectFileTextBlock"/>
+			<TextBlock Text="0 ошибок" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="10" x:Name="ErrorCountTextBlock"/>
+		</Grid>
+
+		<Border Grid.Column="2" Margin="10" x:Name="RightBorder">
+			<StackPanel Margin="5">
+				<StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+					<Button Content="Просмотр / Редактор" Width="126" Margin="5" x:Name="ViewEditorButton"/>
+					<Button Content="Сохранить" Width="120" Margin="5" x:Name="SaveButton"/>
+				</StackPanel>
+				<TextBox Margin="5" x:Name="EditorTextBox"/>
+			</StackPanel>
+		</Border>
 	</Grid>
 </Window>
