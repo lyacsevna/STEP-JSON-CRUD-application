@@ -46,14 +46,64 @@
 			<TextBlock Text="0 ошибок" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="10" x:Name="ErrorCountTextBlock"/>
 		</Grid>
 
-		<Border Grid.Column="2" Margin="10" x:Name="RightBorder">
-			<StackPanel Margin="5">
-				<StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-					<Button Content="Просмотр / Редактор" Width="126" Margin="5" x:Name="ViewEditorButton"/>
-					<Button Content="Сохранить" Width="120" Margin="5" x:Name="SaveButton"/>
-				</StackPanel>
-				<TextBox Margin="5" x:Name="EditorTextBox" AcceptsReturn="True" Height="200" VerticalScrollBarVisibility="Auto"/>
-			</StackPanel>
-		</Border>
-	</Grid>
+        <Border Grid.Column="2" Margin="10" x:Name="RightBorder">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <ToggleButton x:Name="ViewButton" Grid.Column="0" Grid.Row="0" 
+                      HorizontalAlignment="Stretch" 
+                      Checked="ViewButton_Checked">
+                    <ToggleButton.Style>
+                        <Style TargetType="ToggleButton">
+                            <Setter Property="Content" Value="Просмотр"/>
+                            <Setter Property="Background" Value="LightGray"/>
+                            <Setter Property="Foreground" Value="Black"/>
+                            <Setter Property="BorderBrush" Value="DarkGray"/>
+                            <Setter Property="BorderThickness" Value="1"/>
+                            <Setter Property="Padding" Value="5"/>
+                            <Style.Triggers>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter Property="Background" Value="DarkGray"/>
+                                    <Setter Property="Foreground" Value="White"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ToggleButton.Style>
+                </ToggleButton>
+
+                <ToggleButton x:Name="EditorButton" Grid.Column="1" Grid.Row="0" 
+                      HorizontalAlignment="Stretch" 
+                      Checked="EditorButton_Checked">
+                    <ToggleButton.Style>
+                        <Style TargetType="ToggleButton">
+                            <Setter Property="Content" Value="Редактор"/>
+                            <Setter Property="Background" Value="LightGray"/>
+                            <Setter Property="Foreground" Value="Black"/>
+                            <Setter Property="BorderBrush" Value="DarkGray"/>
+                            <Setter Property="BorderThickness" Value="1"/>
+                            <Setter Property="Padding" Value="5"/>
+                            <Style.Triggers>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter Property="Background" Value="DarkGray"/>
+                                    <Setter Property="Foreground" Value="White"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ToggleButton.Style>
+                </ToggleButton>
+
+
+                <TextBox Margin="5" x:Name="EditorTextBox" AcceptsReturn="True" Height="200" 
+                 VerticalScrollBarVisibility="Auto" Grid.Row="1" Grid.ColumnSpan="2"/>
+            </Grid>
+        </Border>
+    </Grid>
 </Window>

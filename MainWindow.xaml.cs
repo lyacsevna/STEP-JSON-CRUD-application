@@ -21,6 +21,17 @@ namespace STEP_JSON_Application_for_ASKON
         public MainWindow()
         {
             InitializeComponent();
+            ViewButton.IsChecked = true;
+        }
+
+        private void ViewButton_Checked(object sender, RoutedEventArgs e)
+        {
+            EditorButton.IsChecked = false;
+        }
+
+        private void EditorButton_Checked(object sender, RoutedEventArgs e)
+        {
+            ViewButton.IsChecked = false;
         }
     }
 }
