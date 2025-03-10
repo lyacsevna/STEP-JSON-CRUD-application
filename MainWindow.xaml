@@ -20,7 +20,7 @@
 			<ListBox Margin="5" Height="200" x:Name="LoadedFilesListBox">
 				<ListBoxItem Content="АБВГ123456.001"/>
 				<ListBoxItem Content="ЕКУП301527.001"/>
-				<ListBoxItem Content="АБВГ721521.006"/>
+				<ListBoxItem Content="АБВГ721521.777"/>
 				<ListBoxItem Content="Шаблон 12.01.08.x"/>
 			</ListBox>
 			<Button Content="Документация" Margin="5" MinHeight="30" x:Name="DocumentationButton"/>
