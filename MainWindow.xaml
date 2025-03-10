@@ -6,6 +6,14 @@
         xmlns:local="clr-namespace:STEP_JSON_Application_for_ASKON"
         mc:Ignorable="d"
         Title="Главное меню" Height="450" Width="900">
+	<Window.Resources>
+		<Style TargetType="Button">
+			<Setter Property="Margin" Value="5"/>
+			<Setter Property="MinHeight" Value="30"/>
+			<Setter Property="Padding" Value="3"/>
+		</Style>
+	</Window.Resources>
+
 	<Grid>
 		<Grid.ColumnDefinitions>
 			<ColumnDefinition Width="250"/>
@@ -14,8 +22,8 @@
 		</Grid.ColumnDefinitions>
 
 		<StackPanel Grid.Column="0" Margin="10" x:Name="LeftPanel">
-			<Button Content="Импорт файла" Margin="5" MinHeight="30" x:Name="ImportButton"/>
-			<Button Content="Экспорт файла" Margin="5" MinHeight="30" x:Name="ExportButton"/>
+			<Button Content="Импорт файла" ToolTip="Импортируйте файл" x:Name="ImportButton"/>
+			<Button Content="Экспорт файла" ToolTip="Экспортируйте файл" x:Name="ExportButton"/>
 			<TextBlock Text="Загруженные файлы" Margin="5" FontWeight="Bold"/>
 			<ListBox Margin="5" Height="200" x:Name="LoadedFilesListBox">
 				<ListBoxItem Content="АБВГ123456.001"/>
@@ -23,8 +31,8 @@
 				<ListBoxItem Content="АБВГ721521.777"/>
 				<ListBoxItem Content="Шаблон 12.01.08.x"/>
 			</ListBox>
-			<Button Content="Документация" Margin="5" MinHeight="30" x:Name="DocumentationButton"/>
-			<Button Content="Выход" Margin="5" MinHeight="30" x:Name="ExitButton"/>
+			<Button Content="Документация" ToolTip="Откройте документацию" x:Name="DocumentationButton"/>
+			<Button Content="Выход" ToolTip="Закрыть приложение" x:Name="ExitButton"/>
 		</StackPanel>
 
 		<Grid Grid.Column="1" Margin="10" x:Name="MainGrid">
@@ -44,7 +52,7 @@
 					<Button Content="Просмотр / Редактор" Width="126" Margin="5" x:Name="ViewEditorButton"/>
 					<Button Content="Сохранить" Width="120" Margin="5" x:Name="SaveButton"/>
 				</StackPanel>
-				<TextBox Margin="5" x:Name="EditorTextBox"/>
+				<TextBox Margin="5" x:Name="EditorTextBox" AcceptsReturn="True" Height="200" VerticalScrollBarVisibility="Auto"/>
 			</StackPanel>
 		</Border>
 	</Grid>
