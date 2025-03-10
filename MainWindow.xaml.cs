@@ -15,9 +15,7 @@ using System.Windows.Shapes;
 
 namespace STEP_JSON_Application_for_ASKON
 {
-    /// <summary>
-    /// Логика взаимодействия для MainWindow.xaml
-    /// </summary>
+   
     public partial class MainWindow : Window
     {
         public MainWindow()
