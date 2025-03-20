@@ -1,15 +1,14 @@
-﻿
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 
-using System.Windows.Shapes;
-
 namespace STEP_JSON_Application_for_ASKON
 {
-   
     public partial class MainWindow : Window
     {
         public MainWindow()
@@ -34,6 +33,28 @@ namespace STEP_JSON_Application_for_ASKON
                     SelectFileTextBlock.Visibility = Visibility.Collapsed;
 
                     StepJsonTextBox.Text = fileContent;
+
+                    try
+                    {
+                        var jsonObject = JObject.Parse(fileContent);
+                        var treeNodes = FormatJsonObject(jsonObject);
+
+                        // Очищаем TreeView перед добавлением новых данных
+                        TextTabTreeView.Items.Clear();
+
+                        // Добавляем узлы в TreeView
+                        foreach (var node in treeNodes)
+                        {
+                            TextTabTreeView.Items.Add(node);
+                        }
+
+                        // Разворачиваем все узлы
+                        ExpandAllTreeViewItems(TextTabTreeView);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Ошибка при десериализации JSON: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
 
                     LoadedFilesListBox.Items.Add(System.IO.Path.GetFileName(filePath));
                 }
@@ -62,11 +83,67 @@ namespace STEP_JSON_Application_for_ASKON
                 return false;
             }
         }
+
+        private List<TreeNode> FormatJsonObject(JObject jsonObject)
+        {
+            var rootNodes = new List<TreeNode>();
+
+            // Группируем объекты по их типам
+            var groupedInstances = jsonObject["instances"]
+                .GroupBy(instance => instance["type"].ToString())
+                .OrderBy(group => group.Key);
+
+            foreach (var group in groupedInstances)
+            {
+                var typeNode = new TreeNode
+                {
+                    Name = $"=== {group.Key.ToUpper()} ===",
+                    IsExpanded = true // Развернуть узел по умолчанию
+                };
+
+                foreach (var instance in group)
+                {
+                    var instanceNode = new TreeNode
+                    {
+                        Name = $"ID: {instance["id"]}",
+                        IsExpanded = true // Развернуть узел по умолчанию
+                    };
+
+                    var attributes = instance["attributes"] as JObject;
+                    if (attributes != null)
+                    {
+                        var attributesNode = new TreeNode
+                        {
+                            Name = "Attributes",
+                            IsExpanded = true // Развернуть узел Attributes по умолчанию
+                        };
+
+                        foreach (var property in attributes.Properties().OrderBy(p => p.Name))
+                        {
+                            attributesNode.Children.Add(new TreeNode
+                            {
+                                Name = property.Name,
+                                Value = property.Value.ToString(),
+                                IsExpanded = true // Развернуть дочерние узлы по умолчанию
+                            });
+                        }
+
+                        instanceNode.Children.Add(attributesNode);
+                    }
+
+                    typeNode.Children.Add(instanceNode);
+                }
+
+                rootNodes.Add(typeNode);
+            }
+
+            return rootNodes;
+        }
+
         private void ViewButton_Checked(object sender, RoutedEventArgs e)
         {
             EditorButton.IsChecked = false;
             StepJsonTextBox.IsReadOnly = true;
-
         }
 
         private void EditorButton_Checked(object sender, RoutedEventArgs e)
@@ -75,5 +152,39 @@ namespace STEP_JSON_Application_for_ASKON
             StepJsonTextBox.IsReadOnly = false;
         }
 
+        private void MainTabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+        }
+
+        // Обработчик события Loaded для TreeView
+        private void TextTabTreeView_Loaded(object sender, RoutedEventArgs e)
+        {
+            // Разворачиваем все узлы при загрузке TreeView
+            ExpandAllTreeViewItems(TextTabTreeView);
+        }
+
+        // Метод для рекурсивного разворачивания всех узлов TreeView
+        private void ExpandAllTreeViewItems(ItemsControl itemsControl)
+        {
+            foreach (var item in itemsControl.Items)
+            {
+                if (itemsControl.ItemContainerGenerator.ContainerFromItem(item) is TreeViewItem treeViewItem)
+                {
+                    treeViewItem.IsExpanded = true; // Разворачиваем узел
+                    if (treeViewItem.Items.Count > 0)
+                    {
+                        ExpandAllTreeViewItems(treeViewItem); // Рекурсивно разворачиваем дочерние узлы
+                    }
+                }
+            }
+        }
+    }
+
+    public class TreeNode
+    {
+        public string Name { get; set; }
+        public string Value { get; set; }
+        public List<TreeNode> Children { get; set; } = new List<TreeNode>();
+        public bool IsExpanded { get; set; } // Добавлено свойство для управления состоянием узла
     }
 }

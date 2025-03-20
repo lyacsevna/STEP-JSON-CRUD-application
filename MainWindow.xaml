@@ -7,43 +7,53 @@
         xmlns:local="clr-namespace:STEP_JSON_Application_for_ASKON"
         mc:Ignorable="d"
         Title="Главное меню" Height="450" Width="900">
-	<Window.Resources>
-		<Style TargetType="Button">
-			<Setter Property="Margin" Value="5"/>
-			<Setter Property="MinHeight" Value="30"/>
-			<Setter Property="Padding" Value="3"/>
-		</Style>
-	</Window.Resources>
+    <Window.Resources>
+        <Style TargetType="Button">
+            <Setter Property="Margin" Value="5"/>
+            <Setter Property="MinHeight" Value="30"/>
+            <Setter Property="Padding" Value="3"/>
+        </Style>
+    </Window.Resources>
 
-	<Grid>
-		<Grid.ColumnDefinitions>
-			<ColumnDefinition Width="250"/>
-			<ColumnDefinition Width="*"/>
-			<ColumnDefinition Width="300"/>
-		</Grid.ColumnDefinitions>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="250"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="300"/>
+        </Grid.ColumnDefinitions>
 
-		<StackPanel Grid.Column="0" Margin="10" x:Name="LeftPanel">
+        <StackPanel Grid.Column="0" Margin="10" x:Name="LeftPanel">
             <Button Content="Импорт файла" ToolTip="Импортируйте файл" x:Name="ImportButton" Click="ImportButton_Click"/>
             <TextBlock Text="Загруженные файлы" Margin="5" FontWeight="Bold"/>
             <ListBox Margin="5" Height="200" x:Name="LoadedFilesListBox"/>
-
         </StackPanel>
 
-		<Grid Grid.Column="1" Margin="10" x:Name="MainGrid">
-			<TabControl x:Name="MainTabControl">
+        <Grid Grid.Column="1" Margin="10" x:Name="MainGrid">
+            <TabControl x:Name="MainTabControl" SelectionChanged="MainTabControl_SelectionChanged">
                 <TabItem Header="STEP-JSON" x:Name="StepJsonTab">
                     <avalonEdit:TextEditor x:Name="StepJsonTextBox" 
                                SyntaxHighlighting="Json"
                                ShowLineNumbers="True" 
                                VerticalScrollBarVisibility="Auto" />
                 </TabItem>
-                <TabItem Header="ТЕКСТ" x:Name="TextTab"/>
-				<TabItem Header="СХЕМА" x:Name="SchemaTab"/>
-			</TabControl>
+                <TabItem Header="ТЕКСТ" x:Name="TextTab">
+                    <TreeView x:Name="TextTabTreeView" Loaded="TextTabTreeView_Loaded">
+                        <TreeView.ItemTemplate>
+                            <HierarchicalDataTemplate ItemsSource="{Binding Children}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding Name}" />
+                                    <TextBlock Text="{Binding Value}" Margin="5,0,0,0" />
+                                </StackPanel>
+                            </HierarchicalDataTemplate>
+                        </TreeView.ItemTemplate>
+                    </TreeView>
+                </TabItem>
+                <TabItem Header="СХЕМА" x:Name="SchemaTab"/>
+            </TabControl>
 
-			<TextBlock Text="Выберите файл" HorizontalAlignment="Center" VerticalAlignment="Center" x:Name="SelectFileTextBlock" Visibility="Visible"/>
-			<TextBlock Text="0 ошибок" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="10" x:Name="ErrorCountTextBlock"/>
-		</Grid>
+            <TextBlock Text="Выберите файл" HorizontalAlignment="Center" VerticalAlignment="Center" x:Name="SelectFileTextBlock" Visibility="Visible"/>
+            <TextBlock Text="0 ошибок" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="10" x:Name="ErrorCountTextBlock"/>
+        </Grid>
 
         <Border Grid.Column="2" Margin="10" x:Name="RightBorder">
             <Grid>
