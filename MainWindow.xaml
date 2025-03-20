@@ -37,7 +37,7 @@
                                VerticalScrollBarVisibility="Auto" />
                 </TabItem>
                 <TabItem Header="ТЕКСТ" x:Name="TextTab">
-                    <TreeView x:Name="TextTabTreeView" Loaded="TextTabTreeView_Loaded">
+                    <TreeView x:Name="TextTabTreeView" Loaded="TextTabTreeView_Loaded" BorderThickness="0" Background="Transparent">
                         <TreeView.ItemTemplate>
                             <HierarchicalDataTemplate ItemsSource="{Binding Children}">
                                 <StackPanel Orientation="Horizontal">
