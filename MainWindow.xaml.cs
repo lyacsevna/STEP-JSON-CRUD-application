@@ -1,17 +1,10 @@
-﻿using Microsoft.Win32;
+﻿
+using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
+
 using System.Windows.Shapes;
 
 namespace STEP_JSON_Application_for_ASKON
@@ -37,28 +30,56 @@ namespace STEP_JSON_Application_for_ASKON
 
             if (openFileDialog.ShowDialog() == true)
             {
-                
                 string filePath = openFileDialog.FileName;
 
-                string fileContent = System.IO.File.ReadAllText(filePath);
+                
+                if (IsValidJson(filePath))
+                {
+                    string fileContent = File.ReadAllText(filePath);
 
-                SelectFileTextBlock.Visibility = Visibility.Collapsed;
+                    SelectFileTextBlock.Visibility = Visibility.Collapsed;
 
-                StepJsonTextBox.Text = fileContent;
+                    StepJsonTextBox.Text = fileContent;
 
-                LoadedFilesListBox.Items.Add(System.IO.Path.GetFileName(filePath));
+                    LoadedFilesListBox.Items.Add(System.IO.Path.GetFileName(filePath));
+                }
+                else
+                {
+                    MessageBox.Show("Файл не является валидным JSON.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
         }
 
+        private bool IsValidJson(string filePath)
+        {
+            try
+            {
+                var jsonString = File.ReadAllText(filePath);
+                JsonConvert.DeserializeObject(jsonString);
+                return true;
+            }
+            catch (JsonException)
+            {
+                return false;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Произошла ошибка: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
+        }
 
         private void ViewButton_Checked(object sender, RoutedEventArgs e)
         {
             EditorButton.IsChecked = false;
+            StepJsonTextBox.IsReadOnly = true;
+
         }
 
         private void EditorButton_Checked(object sender, RoutedEventArgs e)
         {
             ViewButton.IsChecked = false;
+            StepJsonTextBox.IsReadOnly = false;
         }
 
     }

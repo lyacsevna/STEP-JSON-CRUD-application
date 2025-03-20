@@ -31,7 +31,7 @@
 		<Grid Grid.Column="1" Margin="10" x:Name="MainGrid">
 			<TabControl x:Name="MainTabControl">
                 <TabItem Header="STEP-JSON" x:Name="StepJsonTab">
-                    <TextBox x:Name="StepJsonTextBox" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" />
+                    <TextBox x:Name="StepJsonTextBox" AcceptsReturn="True" VerticalScrollBarVisibility="Auto"  />
                 </TabItem>
                 <TabItem Header="ТЕКСТ" x:Name="TextTab"/>
 				<TabItem Header="СХЕМА" x:Name="SchemaTab"/>
@@ -67,7 +67,7 @@
                             <Style.Triggers>
                                 <Trigger Property="IsChecked" Value="True">
                                     <Setter Property="Background" Value="DarkGray"/>
-                                    <Setter Property="Foreground" Value="White"/>
+                                    <Setter Property="Foreground" Value="Black"/>
                                 </Trigger>
                             </Style.Triggers>
                         </Style>
@@ -88,7 +88,7 @@
                             <Style.Triggers>
                                 <Trigger Property="IsChecked" Value="True">
                                     <Setter Property="Background" Value="DarkGray"/>
-                                    <Setter Property="Foreground" Value="White"/>
+                                    <Setter Property="Foreground" Value="Black"/>
                                 </Trigger>
                             </Style.Triggers>
                         </Style>
