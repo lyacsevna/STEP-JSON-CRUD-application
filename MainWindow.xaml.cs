@@ -18,11 +18,6 @@ namespace STEP_JSON_Application_for_ASKON
             ViewButton.IsChecked = true;
         }
 
-        private TextBox GetStepJsonTextBox()
-        {
-            return StepJsonTextBox;
-        }
-
         private void ImportButton_Click(object sender, RoutedEventArgs e)
         {
             Microsoft.Win32.OpenFileDialog openFileDialog = new Microsoft.Win32.OpenFileDialog();
@@ -32,7 +27,6 @@ namespace STEP_JSON_Application_for_ASKON
             {
                 string filePath = openFileDialog.FileName;
 
-                
                 if (IsValidJson(filePath))
                 {
                     string fileContent = File.ReadAllText(filePath);
@@ -68,7 +62,6 @@ namespace STEP_JSON_Application_for_ASKON
                 return false;
             }
         }
-
         private void ViewButton_Checked(object sender, RoutedEventArgs e)
         {
             EditorButton.IsChecked = false;
