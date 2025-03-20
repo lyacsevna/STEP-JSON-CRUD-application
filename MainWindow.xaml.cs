@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -24,6 +25,24 @@ namespace STEP_JSON_Application_for_ASKON
             ViewButton.IsChecked = true;
         }
 
+        private void ImportButton_Click(object sender, RoutedEventArgs e)
+        {
+            
+            OpenFileDialog openFileDialog = new OpenFileDialog();
+            openFileDialog.Filter = "All files (*.*)|*.*";
+
+
+            if (openFileDialog.ShowDialog() == true)
+            {
+                
+                string fileName = System.IO.Path.GetFileName(openFileDialog.FileName);
+
+                
+                LoadedFilesListBox.Items.Add(fileName);
+            }
+        }
+
+
         private void ViewButton_Checked(object sender, RoutedEventArgs e)
         {
             EditorButton.IsChecked = false;
@@ -33,5 +52,6 @@ namespace STEP_JSON_Application_for_ASKON
         {
             ViewButton.IsChecked = false;
         }
+
     }
 }
