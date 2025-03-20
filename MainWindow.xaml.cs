@@ -54,7 +54,6 @@ namespace STEP_JSON_Application_for_ASKON
         {
             try
             {
-                
                 var jsonString = File.ReadAllText(filePath);
                 JsonConvert.DeserializeObject(jsonString);
                 return true;
@@ -73,11 +72,14 @@ namespace STEP_JSON_Application_for_ASKON
         private void ViewButton_Checked(object sender, RoutedEventArgs e)
         {
             EditorButton.IsChecked = false;
+            StepJsonTextBox.IsReadOnly = true;
+
         }
 
         private void EditorButton_Checked(object sender, RoutedEventArgs e)
         {
             ViewButton.IsChecked = false;
+            StepJsonTextBox.IsReadOnly = false;
         }
 
     }
