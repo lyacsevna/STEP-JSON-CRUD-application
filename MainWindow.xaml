@@ -22,21 +22,22 @@
 		</Grid.ColumnDefinitions>
 
 		<StackPanel Grid.Column="0" Margin="10" x:Name="LeftPanel">
-			<Button Content="Импорт файла" ToolTip="Импортируйте файл" x:Name="ImportButton" Click="ImportButton_Click"/>
-
-			<TextBlock Text="Загруженные файлы" Margin="5" FontWeight="Bold"/>
+            <Button Content="Импорт файла" ToolTip="Импортируйте файл" x:Name="ImportButton" Click="ImportButton_Click"/>
+            <TextBlock Text="Загруженные файлы" Margin="5" FontWeight="Bold"/>
             <ListBox Margin="5" Height="200" x:Name="LoadedFilesListBox"/>
 
         </StackPanel>
 
 		<Grid Grid.Column="1" Margin="10" x:Name="MainGrid">
 			<TabControl x:Name="MainTabControl">
-				<TabItem Header="STEP-JSON" x:Name="StepJsonTab"/>
-				<TabItem Header="ТЕКСТ" x:Name="TextTab"/>
+                <TabItem Header="STEP-JSON" x:Name="StepJsonTab">
+                    <TextBox x:Name="StepJsonTextBox" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" />
+                </TabItem>
+                <TabItem Header="ТЕКСТ" x:Name="TextTab"/>
 				<TabItem Header="СХЕМА" x:Name="SchemaTab"/>
 			</TabControl>
 
-			<TextBlock Text="Выберите файл" HorizontalAlignment="Center" VerticalAlignment="Center" x:Name="SelectFileTextBlock"/>
+			<TextBlock Text="Выберите файл" HorizontalAlignment="Center" VerticalAlignment="Center" x:Name="SelectFileTextBlock" Visibility="Visible"/>
 			<TextBlock Text="0 ошибок" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="10" x:Name="ErrorCountTextBlock"/>
 		</Grid>
 

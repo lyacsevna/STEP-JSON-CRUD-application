@@ -25,20 +25,28 @@ namespace STEP_JSON_Application_for_ASKON
             ViewButton.IsChecked = true;
         }
 
+        private TextBox GetStepJsonTextBox()
+        {
+            return StepJsonTextBox;
+        }
+
         private void ImportButton_Click(object sender, RoutedEventArgs e)
         {
-            
-            OpenFileDialog openFileDialog = new OpenFileDialog();
-            openFileDialog.Filter = "All files (*.*)|*.*";
-
+            Microsoft.Win32.OpenFileDialog openFileDialog = new Microsoft.Win32.OpenFileDialog();
+            openFileDialog.Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*";
 
             if (openFileDialog.ShowDialog() == true)
             {
                 
-                string fileName = System.IO.Path.GetFileName(openFileDialog.FileName);
+                string filePath = openFileDialog.FileName;
 
-                
-                LoadedFilesListBox.Items.Add(fileName);
+                string fileContent = System.IO.File.ReadAllText(filePath);
+
+                SelectFileTextBlock.Visibility = Visibility.Collapsed;
+
+                StepJsonTextBox.Text = fileContent;
+
+                LoadedFilesListBox.Items.Add(System.IO.Path.GetFileName(filePath));
             }
         }
 
