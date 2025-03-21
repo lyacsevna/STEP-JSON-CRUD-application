@@ -22,13 +22,29 @@
             <ColumnDefinition Width="300"/>
         </Grid.ColumnDefinitions>
 
-        <StackPanel Grid.Column="0" Margin="10" x:Name="LeftPanel">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="30"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Menu Grid.Column="0" Grid.ColumnSpan="3" VerticalAlignment="Top">
+            <MenuItem Header="Файл">
+                <MenuItem Header="Открыть" InputGestureText="Ctrl + O"></MenuItem>
+                <MenuItem Header="Сохранить" InputGestureText="Ctrl + S"></MenuItem>
+                <MenuItem Header="Сохранить как" InputGestureText="Ctrl + Shift + S"></MenuItem>
+                <Separator/>
+                <MenuItem Header="Выход"></MenuItem>
+            </MenuItem>
+            <MenuItem Header="Справка"></MenuItem>
+        </Menu>
+
+        <StackPanel Grid.Column="0" Grid.Row="1" Margin="10" x:Name="LeftPanel">
             <Button Content="Импорт файла" ToolTip="Импортируйте файл" x:Name="ImportButton" Click="ImportButton_Click"/>
             <TextBlock Text="Загруженные файлы" Margin="5" FontWeight="Bold"/>
             <ListBox Margin="5" Height="200" x:Name="LoadedFilesListBox"/>
         </StackPanel>
 
-        <Grid Grid.Column="1" Margin="10" x:Name="MainGrid">
+        <Grid Grid.Column="1" Grid.Row="1" Margin="10" x:Name="MainGrid">
             <TabControl x:Name="MainTabControl" SelectionChanged="MainTabControl_SelectionChanged">
                 <TabItem Header="STEP-JSON" x:Name="StepJsonTab">
                     <avalonEdit:TextEditor x:Name="StepJsonTextBox" 
@@ -55,7 +71,7 @@
             <TextBlock Text="0 ошибок" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="10" x:Name="ErrorCountTextBlock"/>
         </Grid>
 
-        <Border Grid.Column="2" Margin="10" x:Name="RightBorder">
+        <Border Grid.Column="2" Grid.Row="1" Margin="10" x:Name="RightPanel">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
