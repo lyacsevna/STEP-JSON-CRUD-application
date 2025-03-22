@@ -1,0 +1,21 @@
+﻿<Window x:Class="STEP_JSON_Application_for_ASKON.JsonComparisonWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Сравнение JSON" Height="400" Width="800">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <StackPanel Grid.Column="0">
+            <TextBlock Text="Файл 1" FontWeight="Bold" Margin="5" />
+            <RichTextBox Name="File1RichTextBox" IsReadOnly="True" VerticalScrollBarVisibility="Auto" />
+        </StackPanel>
+
+        <StackPanel Grid.Column="1">
+            <TextBlock Text="Файл 2" FontWeight="Bold" Margin="5" />
+            <RichTextBox Name="File2RichTextBox" IsReadOnly="True" VerticalScrollBarVisibility="Auto" />
+        </StackPanel>
+    </Grid>
+</Window>

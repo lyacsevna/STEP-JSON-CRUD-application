@@ -6,6 +6,11 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
+using System.Windows.Media;
+using DiffPlex;
+using DiffPlex.DiffBuilder;
+using DiffPlex.DiffBuilder.Model;
 
 namespace STEP_JSON_Application_for_ASKON
 {
@@ -15,6 +20,7 @@ namespace STEP_JSON_Application_for_ASKON
         {
             InitializeComponent();
             ViewButton.IsChecked = true;
+
         }
 
         private void ImportButton_Click(object sender, RoutedEventArgs e)
@@ -39,16 +45,16 @@ namespace STEP_JSON_Application_for_ASKON
                         var jsonObject = JObject.Parse(fileContent);
                         var treeNodes = FormatJsonObject(jsonObject);
 
-                        // Очищаем TreeView перед добавлением новых данных
+                        
                         TextTabTreeView.Items.Clear();
 
-                        // Добавляем узлы в TreeView
+                        
                         foreach (var node in treeNodes)
                         {
                             TextTabTreeView.Items.Add(node);
                         }
 
-                        // Разворачиваем все узлы
+                        
                         ExpandAllTreeViewItems(TextTabTreeView);
                     }
                     catch (Exception ex)
@@ -56,13 +62,35 @@ namespace STEP_JSON_Application_for_ASKON
                         MessageBox.Show($"Ошибка при десериализации JSON: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
 
-                    LoadedFilesListBox.Items.Add(System.IO.Path.GetFileName(filePath));
+                    LoadedFilesListBox.Items.Add(filePath);
                 }
                 else
                 {
                     MessageBox.Show("Файл не является валидным JSON.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
+        }
+
+        private void CompareButton_Click(object sender, RoutedEventArgs e)
+        {
+            // Проверяем, загружены ли два файла
+            if (LoadedFilesListBox.Items.Count < 2)
+            {
+                MessageBox.Show("Пожалуйста, загрузите два файла для сравнения.");
+                return;
+            }
+
+            // Получаем пути к загруженным файлам
+            string file1Path = LoadedFilesListBox.Items[0].ToString();
+            string file2Path = LoadedFilesListBox.Items[1].ToString();
+
+            // Читаем содержимое файлов
+            string file1Content = File.ReadAllText(file1Path);
+            string file2Content = File.ReadAllText(file2Path);
+
+            // Открываем новое окно для отображения различий
+            JsonComparisonWindow comparisonWindow = new JsonComparisonWindow(file1Content, file2Content);
+            comparisonWindow.ShowDialog();
         }
 
         private bool IsValidJson(string filePath)
