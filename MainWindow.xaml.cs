@@ -69,24 +69,28 @@ namespace STEP_JSON_Application_for_ASKON
 
         private void CompareButton_Click(object sender, RoutedEventArgs e)
         {
-            
             if (LoadedFilesListBox.Items.Count < 2)
             {
                 MessageBox.Show("Пожалуйста, загрузите два файла для сравнения.");
                 return;
             }
 
-            
             string file1Path = LoadedFilesListBox.Items[0].ToString();
             string file2Path = LoadedFilesListBox.Items[1].ToString();
 
             string file1Content = File.ReadAllText(file1Path);
             string file2Content = File.ReadAllText(file2Path);
 
-            JsonComparisonWindow comparisonWindow = new JsonComparisonWindow(file1Content, file2Content);
+         
+            string fileName1 = System.IO.Path.GetFileName(file1Path);
+            string fileName2 = System.IO.Path.GetFileName(file2Path);
+
+            
+            JsonComparisonWindow comparisonWindow = new JsonComparisonWindow(file1Content, file2Content, fileName1, fileName2);
             comparisonWindow.ShowDialog();
         }
 
+        // JSON Validation
         private bool IsValidJson(string filePath)
         {
             try
@@ -105,6 +109,25 @@ namespace STEP_JSON_Application_for_ASKON
                 return false;
             }
         }
+
+        
+
+        private void ViewButton_Checked(object sender, RoutedEventArgs e)
+        {
+            EditorButton.IsChecked = false;
+            StepJsonTextBox.IsReadOnly = true;
+        }
+
+        private void EditorButton_Checked(object sender, RoutedEventArgs e)
+        {
+            ViewButton.IsChecked = false;
+            StepJsonTextBox.IsReadOnly = false;
+        }
+
+
+
+        // Work with TabItem TEXT (TREE VIEV ITEMS)
+
 
         private List<TreeNode> FormatJsonObject(JObject jsonObject)
         {
@@ -159,22 +182,6 @@ namespace STEP_JSON_Application_for_ASKON
             }
 
             return rootNodes;
-        }
-
-        private void ViewButton_Checked(object sender, RoutedEventArgs e)
-        {
-            EditorButton.IsChecked = false;
-            StepJsonTextBox.IsReadOnly = true;
-        }
-
-        private void EditorButton_Checked(object sender, RoutedEventArgs e)
-        {
-            ViewButton.IsChecked = false;
-            StepJsonTextBox.IsReadOnly = false;
-        }
-
-        private void MainTabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
         }
 
         private void TextTabTreeView_Loaded(object sender, RoutedEventArgs e)

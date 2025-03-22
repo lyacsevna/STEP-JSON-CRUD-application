@@ -9,12 +9,12 @@
         </Grid.ColumnDefinitions>
 
         <StackPanel Grid.Column="0">
-            <TextBlock Text="Файл 1" FontWeight="Bold" Margin="5" />
+            <TextBlock Text="{Binding FileName1}" FontWeight="Bold" Margin="5" />
             <RichTextBox Name="File1RichTextBox" IsReadOnly="True" VerticalScrollBarVisibility="Auto" />
         </StackPanel>
 
         <StackPanel Grid.Column="1">
-            <TextBlock Text="Файл 2" FontWeight="Bold" Margin="5" />
+            <TextBlock Text="{Binding FileName2}" FontWeight="Bold" Margin="5" />
             <RichTextBox Name="File2RichTextBox" IsReadOnly="True" VerticalScrollBarVisibility="Auto" />
         </StackPanel>
     </Grid>
