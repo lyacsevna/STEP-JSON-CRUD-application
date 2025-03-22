@@ -11,10 +11,60 @@ namespace STEP_JSON_Application_for_ASKON
 {
     public partial class MainWindow : Window
     {
+        private string currentFilePath = string.Empty;
         public MainWindow()
         {
             InitializeComponent();
             ViewButton.IsChecked = true;
+        }
+
+        private void OpenFile_Click(object sender, RoutedEventArgs e)
+        {
+            ImportButton_Click(sender, e);
+        }
+
+        private void SaveFile_Click(object sender, RoutedEventArgs e)
+        {
+            SaveFile("Сохранить");
+        }
+
+        private void SaveAsFile_Click(object sender, RoutedEventArgs e)
+        {
+            SaveFile("Сохранить как");
+        }
+
+        private void Exit_Click(object sender, RoutedEventArgs e)
+        {
+            Application.Current.Shutdown(); 
+        }
+
+        private void SaveFile(string action)
+        {
+            Microsoft.Win32.SaveFileDialog saveFileDialog = new Microsoft.Win32.SaveFileDialog();
+            saveFileDialog.Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*";
+
+            if (action == "Сохранить")
+            {
+                if (!string.IsNullOrEmpty(currentFilePath))
+                {
+                    File.WriteAllText(currentFilePath, StepJsonTextBox.Text);
+                    MessageBox.Show("Файл успешно сохранен.", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                else
+                {
+                    MessageBox.Show("Сначала используйте 'Сохранить как' для выбора пути.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+            }
+            else if (action == "Сохранить как")
+            {
+                if (saveFileDialog.ShowDialog() == true)
+                {
+                    string filePath = saveFileDialog.FileName;
+                    File.WriteAllText(filePath, StepJsonTextBox.Text);
+                    currentFilePath = filePath; // Сохраняем путь к текущему файлу
+                    MessageBox.Show("Файл успешно сохранен.", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
         }
 
         private void ImportButton_Click(object sender, RoutedEventArgs e)

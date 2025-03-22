@@ -29,11 +29,11 @@
 
         <Menu x:Name="Menu" Grid.Column="0" Grid.ColumnSpan="3" VerticalAlignment="Top">
             <MenuItem Header="Файл">
-                <MenuItem Header="Открыть" InputGestureText="Ctrl + O"/>
-                <MenuItem Header="Сохранить" InputGestureText="Ctrl + S"/>
-                <MenuItem Header="Сохранить как" InputGestureText="Ctrl + Shift + S"/>
+                <MenuItem Header="Открыть" InputGestureText="Ctrl + O" Click="OpenFile_Click"/>
+                <MenuItem Header="Сохранить" InputGestureText="Ctrl + S" Click="SaveFile_Click"/>
+                <MenuItem Header="Сохранить как" InputGestureText="Ctrl + Shift + S" Click="SaveAsFile_Click"/>
                 <Separator/>
-                <MenuItem Header="Выход"></MenuItem>
+                <MenuItem Header="Выход" Click="Exit_Click"/>
             </MenuItem>
             <MenuItem Header="Справка"></MenuItem>
         </Menu>
