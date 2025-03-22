@@ -45,10 +45,8 @@
             <ListBox Margin="5" Height="200" x:Name="LoadedFilesListBox"/>
         </StackPanel>
 
-        <RichTextBox x:Name="DiffRichTextBox" Grid.Column="1" Grid.Row="1" Margin="10" />
-
-        <Grid Grid.Column="1" Grid.Row="1" Margin="10" x:Name="MainGrid">
-            <TabControl x:Name="MainTabControl" SelectionChanged="MainTabControl_SelectionChanged">
+        <Grid Grid.Column="1" Grid.Row="1" Margin="10" x:Name="MainGrid" >
+            <TabControl x:Name="MainTabControl" SelectionChanged="MainTabControl_SelectionChanged" >
                 <TabItem Header="STEP-JSON" x:Name="StepJsonTab">
                     <avalonEdit:TextEditor x:Name="StepJsonTextBox" 
                                SyntaxHighlighting="Json"
