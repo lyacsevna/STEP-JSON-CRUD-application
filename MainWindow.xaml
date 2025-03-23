@@ -64,7 +64,11 @@
                         </TreeView.ItemTemplate>
                     </TreeView>
                 </TabItem>
-                <TabItem Header="СХЕМА" x:Name="SchemaTab"/>
+                <TabItem Header="СХЕМА" x:Name="SchemaTab">
+                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                        <Canvas x:Name="SchemaCanvas" Background="White" Width="800" Height="600"/>
+                    </ScrollViewer>
+                </TabItem>
             </TabControl>
 
             <TextBlock Text="Выберите файл" HorizontalAlignment="Center" VerticalAlignment="Center" x:Name="SelectFileTextBlock" Visibility="Visible"/>
