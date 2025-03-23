@@ -61,7 +61,7 @@ namespace STEP_JSON_Application_for_ASKON
                 {
                     string filePath = saveFileDialog.FileName;
                     File.WriteAllText(filePath, StepJsonTextBox.Text);
-                    currentFilePath = filePath; // Сохраняем путь к текущему файлу
+                    currentFilePath = filePath; 
                     MessageBox.Show("Файл успешно сохранен.", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
             }
