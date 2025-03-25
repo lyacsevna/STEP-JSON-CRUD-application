@@ -53,6 +53,11 @@ namespace STEP_JSON_Application_for_ASKON
             }
         }
 
+        private void UpdateScaleText(double scale)
+        {
+            ScaleTextBlock.Text = $"Масштаб: {scale * 100}%";
+        }
+
         private void OpenFile_Click(object sender, RoutedEventArgs e)
         {
             ImportButton_Click(sender, e);
