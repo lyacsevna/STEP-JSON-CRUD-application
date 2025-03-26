@@ -42,11 +42,11 @@
         <StackPanel Grid.Column="0" Grid.Row="1" Margin="10 0" x:Name="LeftPanel">
             <Button Content="Импорт файла" ToolTip="Импортируйте файл" x:Name="ImportButton" Click="ImportButton_Click"/>
             <TextBlock Text="Загруженные файлы" Margin="5" FontWeight="Bold"/>
-            <ListBox Margin="5" Height="200" x:Name="LoadedFilesListBox"/>
+            <ListBox Margin="5" Height="200" x:Name="LoadedFilesListBox" SelectionChanged="LoadedFilesListBox_SelectionChanged"/>
         </StackPanel>
 
         <Grid Grid.Column="1" Grid.Row="1" Margin="10" x:Name="MainGrid">
-            <TabControl x:Name="MainTabControl" SelectionChanged="MainTabControl_SelectionChanged">
+            <TabControl x:Name="MainTabControl" >
                 <TabItem Header="STEP-JSON" x:Name="StepJsonTab">
                     <avalonEdit:TextEditor x:Name="StepJsonTextBox" 
                                SyntaxHighlighting="Json"

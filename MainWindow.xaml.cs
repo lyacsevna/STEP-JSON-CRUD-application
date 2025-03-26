@@ -53,6 +53,59 @@ namespace STEP_JSON_Application_for_ASKON
             }
         }
 
+        // Загрузка информации о выбранном файле из ListBox
+        private void LoadedFilesListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            //if (LoadedFilesListBox.SelectedItem != null)
+            //{
+                
+            //    string selectedFileName = LoadedFilesListBox.SelectedItem.ToString();
+
+          
+            //    //string selectedFilePath = GetSelectedFilePath(selectedFileName);
+
+                
+            //    if (!string.IsNullOrEmpty(selectedFilePath))
+            //    {
+            //        try
+            //        {
+            //            string fileContent = File.ReadAllText(selectedFilePath);
+            //            StepJsonTextBox.Text = fileContent;
+
+                        
+            //            if (IsValidJson(fileContent))
+            //            {
+            //                var jsonObject = JObject.Parse(fileContent);
+            //                var treeNodes = FormatJsonObject(jsonObject);
+
+            //                TextTabTreeView.Items.Clear();
+            //                foreach (var node in treeNodes)
+            //                {
+            //                    TextTabTreeView.Items.Add(node);
+            //                }
+
+            //                ExpandAllTreeViewItems(TextTabTreeView);
+            //                GenerateSchema(jsonObject);
+            //            }
+            //            else
+            //            {
+            //                MessageBox.Show("Файл не является валидным JSON.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            //            }
+            //        }
+            //        catch (Exception ex)
+            //        {
+            //            MessageBox.Show($"Ошибка при чтении файла: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            //        }
+            //    }
+            //}
+        }
+        
+
+
+
+
+
+        // меню в панели элементов 
         private void OpenFile_Click(object sender, RoutedEventArgs e)
         {
             ImportButton_Click(sender, e);
@@ -72,6 +125,9 @@ namespace STEP_JSON_Application_for_ASKON
         {
             Application.Current.Shutdown();
         }
+        
+        // ФУНКЦИОНАЛ
+
 
         private void SaveFile(string action)
         {
@@ -153,6 +209,7 @@ namespace STEP_JSON_Application_for_ASKON
             }
         }
 
+        // проверка валидации
         private bool IsValidJson(string filePath)
         {
             try
@@ -172,6 +229,8 @@ namespace STEP_JSON_Application_for_ASKON
             }
         }
 
+
+        // РАБОТА С ДЕРЕВОМ
         private List<TreeNode> FormatJsonObject(JObject jsonObject)
         {
             var rootNodes = new List<TreeNode>();
@@ -514,9 +573,6 @@ namespace STEP_JSON_Application_for_ASKON
             StepJsonTextBox.IsReadOnly = false;
         }
 
-        private void MainTabControl_SelectionChanged(object sender, RoutedEventArgs e)
-        {
-        }
 
         private void TextTabTreeView_Loaded(object sender, RoutedEventArgs e)
         {
