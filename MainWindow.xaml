@@ -17,7 +17,7 @@
 
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="250"/>
+            <ColumnDefinition Width="200"/>
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="300"/>
         </Grid.ColumnDefinitions>
@@ -28,6 +28,37 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="25"/>
         </Grid.RowDefinitions>
+
+        <!-- Меню -->
+        <Menu x:Name="Menu" Grid.Column="0" Grid.ColumnSpan="4" VerticalAlignment="Top">
+            <MenuItem Header="Файл">
+                <MenuItem Header="Открыть" InputGestureText="Ctrl + O" Click="OpenFile_Click"/>
+                <MenuItem Header="Сохранить" InputGestureText="Ctrl + S" Click="SaveFile_Click"/>
+                <MenuItem Header="Сохранить как" InputGestureText="Ctrl + Shift + S" Click="SaveAsFile_Click"/>
+                <Separator/>
+                <MenuItem Header="Выход" Click="Exit_Click"/>
+            </MenuItem>
+            <MenuItem Header="Правка">
+                <MenuItem Header="Отменить" InputGestureText="Ctrl + Z"/>
+                <MenuItem Header="Вернуть" InputGestureText="Ctrl + Y" />
+                <MenuItem Header="Отменить последнее глобальное изменение"/>
+                <MenuItem Header="Повторить последнее глобальное изменение"/>
+                <Separator/>
+                <MenuItem Header="Вырезать" InputGestureText="Ctrl + X"/>
+                <MenuItem Header="Копировать" InputGestureText="Ctrl + C" />
+                <MenuItem Header="Вставить" InputGestureText="Ctrl + V"/>
+                <MenuItem Header="Показать журнал буфера обмена" InputGestureText="Ctrl + Shift + V"/>
+                <MenuItem Header="Дублировать" InputGestureText="Ctrl + D"/>
+                <Separator/>
+                <MenuItem Header="Удалить" InputGestureText="Del"/>
+                <Separator/>
+                <MenuItem Header="Выделить все" InputGestureText="Ctrl + A"/>
+
+
+            </MenuItem>
+            <MenuItem Header="Вид"/>
+            <MenuItem Header="Справка"/>
+        </Menu>
 
         <!-- Панель инструментов -->
         <ToolBarTray x:Name="HorizontalToolPanel" 
@@ -44,30 +75,25 @@
             </ToolBar>
         </ToolBarTray>
 
-        <!-- Меню -->
-        <Menu x:Name="Menu" Grid.Column="0" Grid.ColumnSpan="4" VerticalAlignment="Top">
-            <MenuItem Header="Файл">
-                <MenuItem Header="Открыть" InputGestureText="Ctrl + O" Click="OpenFile_Click"/>
-                <MenuItem Header="Сохранить" InputGestureText="Ctrl + S" Click="SaveFile_Click"/>
-                <MenuItem Header="Сохранить как" InputGestureText="Ctrl + Shift + S" Click="SaveAsFile_Click"/>
-                <Separator/>
-                <MenuItem Header="Выход" Click="Exit_Click"/>
-            </MenuItem>
-            <MenuItem Header="Справка"/>
-        </Menu>
+        
 
         <!-- Левый панель с загруженными файлами -->
         <StackPanel Grid.Column="0" Grid.Row="2" Margin="10 0" x:Name="LeftPanel">
             <Expander Header="Загруженные файлы" Margin="10" IsExpanded="False">
                 <StackPanel>
-                    <ListBox Margin="5" Height="200" x:Name="LoadedFilesListBox"/>
+                    <ListBox Margin="5" Height="Auto" x:Name="LoadedFilesListBox" Visibility="Collapsed"/>
+                    <TextBlock x:Name="EmptyFilesMessage" 
+                       Text="Список загруженных файлов пуст, воспользуйтесь импортом" 
+                       Foreground="Gray" 
+                       Visibility="Collapsed" 
+                       Margin="5"/>
                 </StackPanel>
             </Expander>
         </StackPanel>
 
         <!-- Основная панель с вкладками -->
         <Grid Grid.Column="1" Grid.Row="2" Margin="10" x:Name="MainGrid">
-            <TabControl x:Name="MainTabControl" SelectionChanged="MainTabControl_SelectionChanged">
+            <TabControl x:Name="MainTabControl">
                 <TabItem Header="STEP-JSON" x:Name="StepJsonTab">
                     <avalonEdit:TextEditor x:Name="StepJsonTextBox" 
                                SyntaxHighlighting="Json"
@@ -75,7 +101,7 @@
                                VerticalScrollBarVisibility="Auto" />
                 </TabItem>
                 <TabItem Header="ТЕКСТ" x:Name="TextTab">
-                    <TreeView x:Name="TextTabTreeView" Loaded="TextTabTreeView_Loaded" BorderThickness="0" Background="Transparent">
+                    <TreeView x:Name="TextTabTreeView" BorderThickness="0" Background="Transparent">
                         <TreeView.ItemTemplate>
                             <HierarchicalDataTemplate ItemsSource="{Binding Children}">
                                 <StackPanel Orientation="Horizontal">
