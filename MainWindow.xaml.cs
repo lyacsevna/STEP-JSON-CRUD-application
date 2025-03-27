@@ -1,14 +1,11 @@
-﻿using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+﻿using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input; // Добавлено для Keyboard.Modifiers
 using System.Windows.Media; // Для ScaleTransform
-using System.Windows.Shapes;
 
 namespace STEP_JSON_Application_for_ASKON
 {
@@ -17,6 +14,10 @@ namespace STEP_JSON_Application_for_ASKON
         private string currentFilePath = string.Empty;
         private double scale = 1.0; // Текущий масштаб
         private const double ScaleRate = 0.1; // Шаг изменения масштаба
+
+        private JsonManager jsonManager = new JsonManager();
+        private TreeManager treeManager = new TreeManager();
+        private SchemaManager schemaManager = new SchemaManager();
 
         public MainWindow()
         {
@@ -58,6 +59,7 @@ namespace STEP_JSON_Application_for_ASKON
         {
             //if (LoadedFilesListBox.SelectedItem != null)
             //{
+<<<<<<< HEAD
                 
             //    string selectedFileName = LoadedFilesListBox.SelectedItem.ToString();
 
@@ -65,6 +67,15 @@ namespace STEP_JSON_Application_for_ASKON
             //    //string selectedFilePath = GetSelectedFilePath(selectedFileName);
 
                 
+=======
+
+            //    string selectedFileName = LoadedFilesListBox.SelectedItem.ToString();
+
+
+            //    //string selectedFilePath = GetSelectedFilePath(selectedFileName);
+
+
+>>>>>>> sort_by_files
             //    if (!string.IsNullOrEmpty(selectedFilePath))
             //    {
             //        try
@@ -72,7 +83,11 @@ namespace STEP_JSON_Application_for_ASKON
             //            string fileContent = File.ReadAllText(selectedFilePath);
             //            StepJsonTextBox.Text = fileContent;
 
+<<<<<<< HEAD
                         
+=======
+
+>>>>>>> sort_by_files
             //            if (IsValidJson(fileContent))
             //            {
             //                var jsonObject = JObject.Parse(fileContent);
@@ -98,11 +113,15 @@ namespace STEP_JSON_Application_for_ASKON
             //        }
             //    }
             //}
+<<<<<<< HEAD
         }
         
 
 
 
+=======
+        } //ВЫБОР ФАЙЛА ИЗ ЗАГРУЖЕННЫХ
+>>>>>>> sort_by_files
 
 
         // меню в панели элементов 
@@ -129,6 +148,66 @@ namespace STEP_JSON_Application_for_ASKON
         // ФУНКЦИОНАЛ
 
 
+        // ФУНКЦИОНАЛ
+
+        private void ImportButton_Click(object sender, RoutedEventArgs e)
+        {
+            Microsoft.Win32.OpenFileDialog openFileDialog = new Microsoft.Win32.OpenFileDialog();
+            openFileDialog.Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*";
+
+            if (openFileDialog.ShowDialog() == true)
+            {
+                string filePath = openFileDialog.FileName;
+
+                if (jsonManager.IsValidJson(filePath))
+                {
+                    string fileContent = File.ReadAllText(filePath);
+                    SelectFileTextBlock.Visibility = Visibility.Collapsed;
+                    StepJsonTextBox.Text = fileContent;
+
+                    try
+                    {
+                        var jsonObject = JObject.Parse(fileContent);
+                        var treeNodes = treeManager.FormatJsonObject(jsonObject);
+
+                        TextTabTreeView.Items.Clear();
+
+                        foreach (var node in treeNodes)
+                        {
+                            TextTabTreeView.Items.Add(node);
+                        }
+
+                        treeManager.ExpandAllTreeViewItems(TextTabTreeView);
+                        schemaManager.GenerateSchema(jsonObject, SchemaCanvas);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Ошибка при десериализации JSON: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+
+                    LoadedFilesListBox.Items.Add(System.IO.Path.GetFileName(filePath));
+                    UpdateLoadedFilesList();
+                }
+                else
+                {
+                    MessageBox.Show("Файл не является валидным JSON.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+
+        private void UpdateLoadedFilesList()
+        {
+            if (LoadedFilesListBox.Items.Count == 0)
+            {
+                EmptyFilesMessage.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                EmptyFilesMessage.Visibility = Visibility.Collapsed;
+                LoadedFilesListBox.Visibility = Visibility.Visible;
+            }
+        }
+
         private void SaveFile(string action)
         {
             Microsoft.Win32.SaveFileDialog saveFileDialog = new Microsoft.Win32.SaveFileDialog();
@@ -152,9 +231,6 @@ namespace STEP_JSON_Application_for_ASKON
                 {
                     string filePath = saveFileDialog.FileName;
                     File.WriteAllText(filePath, StepJsonTextBox.Text);
-
-                    currentFilePath = filePath; 
-
                     currentFilePath = filePath;
 
                     MessageBox.Show("Файл успешно сохранен.", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -162,6 +238,7 @@ namespace STEP_JSON_Application_for_ASKON
             }
         }
 
+<<<<<<< HEAD
         private void ImportButton_Click(object sender, RoutedEventArgs e)
         {
             Microsoft.Win32.OpenFileDialog openFileDialog = new Microsoft.Win32.OpenFileDialog();
@@ -560,6 +637,8 @@ namespace STEP_JSON_Application_for_ASKON
 
             return (line1, line2, line3, endShape);
         }
+=======
+>>>>>>> sort_by_files
 
         private void ViewButton_Checked(object sender, RoutedEventArgs e)
         {
@@ -573,6 +652,7 @@ namespace STEP_JSON_Application_for_ASKON
             StepJsonTextBox.IsReadOnly = false;
         }
 
+<<<<<<< HEAD
 
         private void TextTabTreeView_Loaded(object sender, RoutedEventArgs e)
         {
@@ -593,6 +673,8 @@ namespace STEP_JSON_Application_for_ASKON
                 }
             }
         }
+=======
+>>>>>>> sort_by_files
     }
 
     public class TreeNode

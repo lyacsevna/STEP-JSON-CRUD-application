@@ -15,20 +15,22 @@
         </Style>
     </Window.Resources>
 
-
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="250"/>
+            <ColumnDefinition Width="200"/>
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="300"/>
         </Grid.ColumnDefinitions>
 
         <Grid.RowDefinitions>
             <RowDefinition Height="20"/>
+            <RowDefinition Height="25"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="25"/>
         </Grid.RowDefinitions>
 
-        <Menu x:Name="Menu" Grid.Column="0" Grid.ColumnSpan="3" VerticalAlignment="Top">
+        <!-- Меню -->
+        <Menu x:Name="Menu" Grid.Column="0" Grid.ColumnSpan="4" VerticalAlignment="Top">
             <MenuItem Header="Файл">
                 <MenuItem Header="Открыть" InputGestureText="Ctrl + O" Click="OpenFile_Click"/>
                 <MenuItem Header="Сохранить" InputGestureText="Ctrl + S" Click="SaveFile_Click"/>
@@ -36,9 +38,29 @@
                 <Separator/>
                 <MenuItem Header="Выход" Click="Exit_Click"/>
             </MenuItem>
-            <MenuItem Header="Справка"></MenuItem>
+            <MenuItem Header="Правка">
+                <MenuItem Header="Отменить" InputGestureText="Ctrl + Z"/>
+                <MenuItem Header="Вернуть" InputGestureText="Ctrl + Y" />
+                <MenuItem Header="Отменить последнее глобальное изменение"/>
+                <MenuItem Header="Повторить последнее глобальное изменение"/>
+                <Separator/>
+                <MenuItem Header="Вырезать" InputGestureText="Ctrl + X"/>
+                <MenuItem Header="Копировать" InputGestureText="Ctrl + C" />
+                <MenuItem Header="Вставить" InputGestureText="Ctrl + V"/>
+                <MenuItem Header="Показать журнал буфера обмена" InputGestureText="Ctrl + Shift + V"/>
+                <MenuItem Header="Дублировать" InputGestureText="Ctrl + D"/>
+                <Separator/>
+                <MenuItem Header="Удалить" InputGestureText="Del"/>
+                <Separator/>
+                <MenuItem Header="Выделить все" InputGestureText="Ctrl + A"/>
+
+
+            </MenuItem>
+            <MenuItem Header="Вид"/>
+            <MenuItem Header="Справка"/>
         </Menu>
 
+<<<<<<< HEAD
         <StackPanel Grid.Column="0" Grid.Row="1" Margin="10 0" x:Name="LeftPanel">
             <Button Content="Импорт файла" ToolTip="Импортируйте файл" x:Name="ImportButton" Click="ImportButton_Click"/>
             <TextBlock Text="Загруженные файлы" Margin="5" FontWeight="Bold"/>
@@ -47,6 +69,42 @@
 
         <Grid Grid.Column="1" Grid.Row="1" Margin="10" x:Name="MainGrid">
             <TabControl x:Name="MainTabControl" >
+=======
+        <!-- Панель инструментов -->
+        <ToolBarTray x:Name="HorizontalToolPanel" 
+                     Grid.Column="0" 
+                     Grid.ColumnSpan="3"
+                     Grid.Row="1"
+                     Orientation="Horizontal">
+            <ToolBar>
+                <Button Content="Импорт файла" ToolTip="Импортируйте файл" x:Name="ImportButton" Click="ImportButton_Click"/>
+                <Separator/>
+                <Button Content="Сохранить"/>
+                <Separator/>
+                <TextBox Foreground="LightGray" Width="100">Поиск...</TextBox>
+            </ToolBar>
+        </ToolBarTray>
+
+        
+
+        <!-- Левый панель с загруженными файлами -->
+        <StackPanel Grid.Column="0" Grid.Row="2" Margin="10 0" x:Name="LeftPanel">
+            <Expander Header="Загруженные файлы" Margin="10" IsExpanded="False">
+                <StackPanel>
+                    <ListBox Margin="5" Height="Auto" x:Name="LoadedFilesListBox" Visibility="Collapsed"/>
+                    <TextBlock x:Name="EmptyFilesMessage" 
+                       Text="Список загруженных файлов пуст, воспользуйтесь импортом" 
+                       Foreground="Gray" 
+                       Visibility="Collapsed" 
+                       Margin="5"/>
+                </StackPanel>
+            </Expander>
+        </StackPanel>
+
+        <!-- Основная панель с вкладками -->
+        <Grid Grid.Column="1" Grid.Row="2" Margin="10" x:Name="MainGrid">
+            <TabControl x:Name="MainTabControl">
+>>>>>>> sort_by_files
                 <TabItem Header="STEP-JSON" x:Name="StepJsonTab">
                     <avalonEdit:TextEditor x:Name="StepJsonTextBox" 
                                SyntaxHighlighting="Json"
@@ -54,7 +112,7 @@
                                VerticalScrollBarVisibility="Auto" />
                 </TabItem>
                 <TabItem Header="ТЕКСТ" x:Name="TextTab">
-                    <TreeView x:Name="TextTabTreeView" Loaded="TextTabTreeView_Loaded" BorderThickness="0" Background="Transparent">
+                    <TreeView x:Name="TextTabTreeView" BorderThickness="0" Background="Transparent">
                         <TreeView.ItemTemplate>
                             <HierarchicalDataTemplate ItemsSource="{Binding Children}">
                                 <StackPanel Orientation="Horizontal">
@@ -76,7 +134,8 @@
             <TextBlock Text="0 ошибок" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="10" x:Name="ErrorCountTextBlock"/>
         </Grid>
 
-        <Grid Grid.Column="2" Grid.Row="1" Margin="10" x:Name="RightPanel">
+        <!-- Правая панель с кнопками просмотра и редактора -->
+        <Grid Grid.Column="2" Grid.Row="2" Margin="10" x:Name="RightPanel">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="30"/>
@@ -88,8 +147,8 @@
             </Grid.ColumnDefinitions>
 
             <ToggleButton x:Name="ViewButton" Grid.Column="0" Grid.Row="0" 
-              HorizontalAlignment="Stretch" 
-              Checked="ViewButton_Checked">
+                          HorizontalAlignment="Stretch" 
+                          Checked="ViewButton_Checked">
                 <ToggleButton.Style>
                     <Style TargetType="ToggleButton">
                         <Setter Property="Content" Value="Просмотр"/>
@@ -109,8 +168,8 @@
             </ToggleButton>
 
             <ToggleButton x:Name="EditorButton" Grid.Column="1" Grid.Row="0" 
-              HorizontalAlignment="Stretch" 
-              Checked="EditorButton_Checked">
+                          HorizontalAlignment="Stretch" 
+                          Checked="EditorButton_Checked">
                 <ToggleButton.Style>
                     <Style TargetType="ToggleButton">
                         <Setter Property="Content" Value="Редактор"/>
@@ -130,5 +189,10 @@
             </ToggleButton>
             <TextBox Margin="0 5" x:Name="EditorTextBox" AcceptsReturn="True" Grid.Row="1" Grid.ColumnSpan="2"/>
         </Grid>
+
+        <TextBlock Grid.Row="3" Grid.ColumnSpan="3" 
+                   HorizontalAlignment="Center" 
+                   VerticalAlignment="Top" Margin="5" 
+                   x:Name="ScaleTextBlock" Text="Масштаб:  "/>
     </Grid>
 </Window>
