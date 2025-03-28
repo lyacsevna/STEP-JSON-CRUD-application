@@ -17,7 +17,7 @@
 
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="200"/>
+            <ColumnDefinition Width="250"/>
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="300"/>
         </Grid.ColumnDefinitions>
@@ -81,7 +81,11 @@
         <StackPanel Grid.Column="0" Grid.Row="2" Margin="10 0" x:Name="LeftPanel">
             <Expander Header="Загруженные файлы" Margin="10" IsExpanded="False">
                 <StackPanel>
-                    <ListBox Margin="5" Height="Auto" x:Name="LoadedFilesListBox" Visibility="Collapsed"/>
+                    <ListBox Margin="5" Height="Auto"
+                             Width="180"
+                             x:Name="LoadedFilesListBox"
+                             Visibility="Collapsed"
+                              SelectionChanged="LoadedFilesListBox_SelectionChanged"/>
                     <TextBlock x:Name="EmptyFilesMessage" 
                        Text="Список загруженных файлов пуст, воспользуйтесь импортом" 
                        Foreground="Gray" 
