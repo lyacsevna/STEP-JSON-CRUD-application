@@ -6,7 +6,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:STEP_JSON_Application_for_ASKON"
         mc:Ignorable="d"
-        Title="Главное меню" Height="450" Width="900">
+        Title="Главное меню" Height="450" Width="800">
     <Window.Resources>
         <Style TargetType="Button">
             <Setter Property="Margin" Value="5"/>
@@ -17,16 +17,16 @@
 
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="250"/>
-            <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="300"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="4.5*"/>
+            <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
 
         <Grid.RowDefinitions>
-            <RowDefinition Height="20"/>
-            <RowDefinition Height="25"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="25"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <!-- Меню -->
@@ -69,27 +69,30 @@
             <ToolBar>
                 <Button Content="Импорт файла" ToolTip="Импортируйте файл" x:Name="ImportButton" Click="ImportButton_Click"/>
                 <Separator/>
-                <Button Content="Сохранить"/>
+                <Button Content="Сохранить" />
                 <Separator/>
-                <TextBox Foreground="LightGray" Width="100">Поиск...</TextBox>
+                <TextBox Foreground="LightGray" Width="Auto">Поиск...</TextBox>
             </ToolBar>
         </ToolBarTray>
 
 
 
-        <!-- Левый панель с загруженными файлами -->
-        <StackPanel Grid.Column="0" Grid.Row="2" Margin="10 0" x:Name="LeftPanel">
+        <!-- Левая панель с загруженными файлами -->
+        <StackPanel Grid.Column="0" Grid.Row="2" Margin="10 0" x:Name="LeftPanel" >
             <Expander Header="Загруженные файлы" Margin="10" IsExpanded="False">
-                <StackPanel>
+                <StackPanel MaxWidth="250">
                     <ListBox Margin="5" Height="Auto"
-                             Width="180"
+                             Width="Auto"
                              x:Name="LoadedFilesListBox"
                              Visibility="Collapsed"
                               SelectionChanged="LoadedFilesListBox_SelectionChanged"/>
                     <TextBlock x:Name="EmptyFilesMessage" 
-                       Text="Список загруженных файлов пуст, воспользуйтесь импортом" 
+                       Text="Список загруженных файлов пуст,воспользуйтесь импортом" 
                        Foreground="Gray" 
-                       Visibility="Collapsed" 
+                       Height="Auto"
+                       TextWrapping="Wrap"
+                       Visibility="Visible" 
+
                        Margin="5"/>
                 </StackPanel>
             </Expander>
@@ -118,7 +121,7 @@
                 </TabItem>
                 <TabItem Header="СХЕМА" x:Name="SchemaTab">
                     <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
-                        <Canvas x:Name="SchemaCanvas" Background="White" Width="800" Height="600"/>
+                        <Canvas x:Name="SchemaCanvas" Background="White" Width="800" Height="800"/>
                     </ScrollViewer>
                 </TabItem>
             </TabControl>
@@ -131,7 +134,7 @@
         <Grid Grid.Column="2" Grid.Row="2" Margin="10" x:Name="RightPanel">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
-                <RowDefinition Height="30"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
             <Grid.ColumnDefinitions>
