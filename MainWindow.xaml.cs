@@ -17,6 +17,9 @@ namespace STEP_JSON_Application_for_ASKON
         private double scale = 1.0; // Текущий масштаб
         private const double ScaleRate = 0.1; // Шаг изменения масштаба
 
+
+        private List<string> loadedFilePaths = new List<string>(); //для хранения путей загруженных файлов
+
         private JsonManager jsonManager = new JsonManager();
         private TreeManager treeManager = new TreeManager();
         private SchemaManager schemaManager = new SchemaManager();
@@ -54,11 +57,7 @@ namespace STEP_JSON_Application_for_ASKON
 
                 e.Handled = true; // Предотвращаем дальнейшую обработку события
             }
-        }
-
-
-        
-        private List<string> loadedFilePaths = new List<string>();
+        } 
 
 
         private void ImportButton_Click(object sender, RoutedEventArgs e)
@@ -67,8 +66,6 @@ namespace STEP_JSON_Application_for_ASKON
             {
                 Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*"
             };
-
-            
 
             if (openFileDialog.ShowDialog() == true)
             {
@@ -109,36 +106,26 @@ namespace STEP_JSON_Application_for_ASKON
                 {
                     MessageBox.Show("Файл не является валидным JSON.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
-                //string filePath = openFileDialog.FileName;
-
-
-                //string fileContent = File.ReadAllText(filePath);
-
-
-                //SelectFileTextBlock.Visibility = Visibility.Collapsed;
-                //StepJsonTextBox.Text = fileContent;
-
-                //var jsonObject = JObject.Parse(fileContent);
-                //var treeNodes = treeManager.FormatJsonObject(jsonObject);
-
-                //TextTabTreeView.Items.Clear();
-                //SchemaCanvas.Children.Clear();
-
-                //foreach (var node in treeNodes)
-                //{
-                //    TextTabTreeView.Items.Add(node);
-                //}
-
-                //treeManager.ExpandAllTreeViewItems(TextTabTreeView);
-                //schemaManager.GenerateSchema(jsonObject, SchemaCanvas);
-
-
-                //LoadedFilesListBox.Items.Add(System.IO.Path.GetFileName(filePath));
-                //loadedFilePaths.Add(filePath);
-                //UpdateLoadedFilesList();
+              
             }
         }
 
+        // UPDATE LISTBOX WHEN IMPORTING
+        private void UpdateLoadedFilesList()
+        {
+            if (LoadedFilesListBox.Items.Count == 0)
+            {
+                EmptyFilesMessage.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                EmptyFilesMessage.Visibility = Visibility.Collapsed;
+                LoadedFilesListBox.Visibility = Visibility.Visible;
+            }
+        }
+
+
+        // SELECTING FILES FROM UPLOADED TO LISTBOX
         private void LoadedFilesListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (LoadedFilesListBox.SelectedItem is string selectedFileName)
@@ -168,6 +155,7 @@ namespace STEP_JSON_Application_for_ASKON
             }
         }
 
+        // GETTING THE PATH OF THE DOWNLOADED FILE IN LITBOX
         private string GetSelectedFilePath(string selectedFileName)
         {
             try
@@ -185,103 +173,7 @@ namespace STEP_JSON_Application_for_ASKON
             return null;
         }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        // меню в панели элементов 
-        private void OpenFile_Click(object sender, RoutedEventArgs e)
-        {
-            ImportButton_Click(sender, e);
-        }
-
-        private void SaveFile_Click(object sender, RoutedEventArgs e)
-        {
-            SaveFile("Сохранить");
-        }
-
-        private void SaveAsFile_Click(object sender, RoutedEventArgs e)
-        {
-            SaveFile("Сохранить как");
-        }
-
-        private void Exit_Click(object sender, RoutedEventArgs e)
-        {
-            Application.Current.Shutdown();
-        }
-
-
-        // ФУНКЦИОНАЛ
-
-        //private void ImportButton_Click(object sender, RoutedEventArgs e)
-        //{
-        //    Microsoft.Win32.OpenFileDialog openFileDialog = new Microsoft.Win32.OpenFileDialog();
-        //    openFileDialog.Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*";
-
-        //    if (openFileDialog.ShowDialog() == true)
-        //    {
-        //        string filePath = openFileDialog.FileName;
-
-        //        if (jsonManager.IsValidJson(filePath))
-        //        {
-        //            string fileContent = File.ReadAllText(filePath);
-        //            SelectFileTextBlock.Visibility = Visibility.Collapsed;
-        //            StepJsonTextBox.Text = fileContent;
-
-        //            try
-        //            {
-        //                var jsonObject = JObject.Parse(fileContent);
-        //                var treeNodes = treeManager.FormatJsonObject(jsonObject);
-        //                TextTabTreeView.Items.Clear();
-
-        //                foreach (var node in treeNodes)
-        //                {
-        //                    TextTabTreeView.Items.Add(node);
-        //                }
-
-        //                treeManager.ExpandAllTreeViewItems(TextTabTreeView);
-        //                schemaManager.GenerateSchema(jsonObject, SchemaCanvas);
-        //            }
-        //            catch (Exception ex)
-        //            {
-        //                MessageBox.Show($"Ошибка при десериализации JSON: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-        //            }
-
-        //            LoadedFilesListBox.Items.Add(System.IO.Path.GetFileName(filePath));
-        //            UpdateLoadedFilesList();
-        //        }
-        //        else
-        //        {
-        //            MessageBox.Show("Файл не является валидным JSON.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-        //        }
-        //    }
-        //}
-
-        private void UpdateLoadedFilesList()
-        {
-            if (LoadedFilesListBox.Items.Count == 0)
-            {
-                EmptyFilesMessage.Visibility = Visibility.Visible;
-            }
-            else
-            {
-                EmptyFilesMessage.Visibility = Visibility.Collapsed;
-                LoadedFilesListBox.Visibility = Visibility.Visible;
-            }
-        }
-
+        // SAVING A FILE WHEN EDITING
         private void SaveFile(string action)
         {
             Microsoft.Win32.SaveFileDialog saveFileDialog = new Microsoft.Win32.SaveFileDialog();
@@ -313,6 +205,30 @@ namespace STEP_JSON_Application_for_ASKON
         }
 
 
+        // BUTTONS IN THE MENU BANE
+        private void OpenFile_Click(object sender, RoutedEventArgs e)
+        {
+            ImportButton_Click(sender, e);
+        }
+
+        private void SaveFile_Click(object sender, RoutedEventArgs e)
+        {
+            SaveFile("Сохранить");
+        }
+
+        private void SaveAsFile_Click(object sender, RoutedEventArgs e)
+        {
+            SaveFile("Сохранить как");
+        }
+
+        private void Exit_Click(object sender, RoutedEventArgs e)
+        {
+            Application.Current.Shutdown();
+        }
+
+
+        // BUTTONS FOR SWITCHING THE VIEWING AND EDITING MODE
+
         private void ViewButton_Checked(object sender, RoutedEventArgs e)
         {
             EditorButton.IsChecked = false;
@@ -327,6 +243,7 @@ namespace STEP_JSON_Application_for_ASKON
 
     }
 
+    // SOMETHING FOR WORKING WITH WOOD.....
     public class TreeNode
     {
         public string Name { get; set; }
@@ -335,3 +252,26 @@ namespace STEP_JSON_Application_for_ASKON
         public bool IsExpanded { get; set; }
     }
 }
+
+//                    _oo0oo_
+//                   o8888888o
+//                   88" . "88
+//                   (| -_- |)
+//                   0\  =  /0
+//                 ___/`---'\___
+//               .' \\|     |// '.
+//              / \\|||  :  |||// \
+//             / _||||| -:- |||||- \
+//            |   | \\\  -  /// |   |
+//            | \_|  ''\---/''  |_/ |
+//            \  .-\__  '-'  ___/-. /
+//          ___'. .'  /--.--\  `. .'___
+//       ."" '<  `.___\_<|>_/___.' >' "".
+//      | | :  `- \`.;`\ _ /`;.`/ - ` : | |
+//      \  \ `_.   \_ __\ /__ _/   .-` /  /
+//  =====`-.____`.___ \_____/___.-`___.-'=====
+//                       `=---='
+//
+//  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+//            God Bless         No Bugs
