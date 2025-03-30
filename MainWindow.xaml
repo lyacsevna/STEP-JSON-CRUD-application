@@ -111,14 +111,10 @@
                     <TreeView x:Name="TextTabTreeView" BorderThickness="0" Background="Transparent">
                         <TreeView.ItemTemplate>
                             <HierarchicalDataTemplate ItemsSource="{Binding Children}">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="200"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="{Binding Name}" Grid.Column="0" FontWeight="DemiBold"/>
-                                    <TextBlock Text="{Binding Value}" Grid.Column="1" Margin="10,0,0,0"/>
-                                </Grid>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding Name}" />
+                                    <TextBlock Text="{Binding Value}" Margin="5,0,0,0" />
+                                </StackPanel>
                             </HierarchicalDataTemplate>
                         </TreeView.ItemTemplate>
                     </TreeView>
