@@ -2,8 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows;
@@ -13,17 +11,21 @@ namespace STEP_JSON_Application_for_ASKON
 {
     public class SchemaManager
     {
+        private readonly double NodeWidth = 200;
+        private readonly double NodeHeight = 100;
+        private readonly double VerticalSpacing = 100;
+        private readonly double HorizontalSpacing = 120;
+
         public void GenerateSchema(JObject jsonObject, Canvas schemaCanvas)
         {
-
-            if (jsonObject["instances"] == null)
+            if (jsonObject == null || jsonObject["instances"] == null)
             {
                 MessageBox.Show("В JSON отсутствует массив 'instances'.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             var instances = jsonObject["instances"].ToObject<List<JObject>>();
-            if (instances == null || !instances.Any())
+            if (instances == null || instances.Count == 0)
             {
                 MessageBox.Show("Массив 'instances' пуст или некорректен.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
@@ -34,36 +36,57 @@ namespace STEP_JSON_Application_for_ASKON
 
             foreach (var instance in instances)
             {
-                string type = instance["type"]?.ToString() ?? "unknown";
+                string type = instance["type"] != null ? instance["type"].ToString() : "unknown";
                 var attributes = instance["attributes"] as JObject;
 
-                if (type.Contains("next_assembly_usage_occurrence") && attributes != null)
+                if (attributes != null)
                 {
-                    string relatingId = attributes["relating_product_definition"]?.ToString();
-                    string relatedId = attributes["related_product_definition"]?.ToString();
-                    string refDesignator = attributes["reference_designator"]?.ToString() ?? "Входит в состав";
-                    if (!string.IsNullOrEmpty(relatingId) && !string.IsNullOrEmpty(relatedId))
+                    if (type.Contains("next_assembly_usage_occurrence"))
                     {
-                        relationships.Add((relatingId, relatedId, refDesignator, "composition"));
+                        string relatingId = attributes["relating_product_definition"]?.ToString();
+                        string relatedId = attributes["related_product_definition"]?.ToString();
+                        if (!string.IsNullOrEmpty(relatingId) && !string.IsNullOrEmpty(relatedId))
+                        {
+                            string refDesignator = attributes["reference_designator"]?.ToString();
+                            string quantityId = attributes["quantity"]?.ToString();
+                            string quantityLabel = GetQuantityLabel(quantityId, instances);
+                            string unit = GetUnitForQuantity(quantityId, instances);
+
+                            string label;
+                            if (string.IsNullOrEmpty(refDesignator) && string.IsNullOrEmpty(quantityLabel))
+                            {
+                                label = "Состоит из,\nкол-во неизвестно"; // Улучшенная подпись при отсутствии данных
+                            }
+                            else if (string.IsNullOrEmpty(refDesignator))
+                            {
+                                label = $"Состоит из,\nкол-во {quantityLabel} {unit}";
+                            }
+                            else
+                            {
+                                label = $"Состоит из,\nпоз.{refDesignator},\nкол-во {quantityLabel} {unit}";
+                            }
+                            relationships.Add((relatingId, relatedId, label, "composition"));
+                        }
                     }
-                }
-                else if (type == "eskd_organization_product_assignment" && attributes != null)
-                {
-                    string productId = attributes["assigned_product"]?.ToString();
-                    string orgId = attributes["assigned_organization"]?.ToString();
-                    string role = instances.FirstOrDefault(i => i["id"]?.ToString() == attributes["role"]?.ToString())?["attributes"]?["name"]?.ToString() ?? "Назначена организация";
-                    if (!string.IsNullOrEmpty(productId) && !string.IsNullOrEmpty(orgId))
+                    else if (type == "eskd_organization_product_assignment")
                     {
-                        relationships.Add((productId, orgId, role, "organization"));
+                        string productId = attributes["assigned_product"]?.ToString();
+                        string orgId = attributes["assigned_organization"]?.ToString();
+                        if (!string.IsNullOrEmpty(productId) && !string.IsNullOrEmpty(orgId))
+                        {
+                            string roleId = attributes["role"]?.ToString();
+                            string role = instances.FirstOrDefault(i => i["id"]?.ToString() == roleId)?["attributes"]?["name"]?.ToString() ?? "Назначена организация";
+                            relationships.Add((productId, orgId, role, "organization"));
+                        }
                     }
-                }
-                else if (type == "product_definition" && attributes != null)
-                {
-                    string defId = instance["id"]?.ToString();
-                    string formationId = attributes["formation"]?.ToString();
-                    if (!string.IsNullOrEmpty(defId) && !string.IsNullOrEmpty(formationId))
+                    else if (type == "product_definition")
                     {
-                        relationships.Add((defId, formationId, "Версия", "version"));
+                        string defId = instance["id"]?.ToString();
+                        string formationId = attributes["formation"]?.ToString();
+                        if (!string.IsNullOrEmpty(defId) && !string.IsNullOrEmpty(formationId))
+                        {
+                            relationships.Add((defId, formationId, "Версия", "version"));
+                        }
                     }
                 }
             }
@@ -73,16 +96,21 @@ namespace STEP_JSON_Application_for_ASKON
             var rootIds = allIds.Except(childIds).ToList();
 
             var levels = new Dictionary<int, List<(string Id, JObject Instance)>>();
+            var usedIds = new HashSet<string>();
+
             void BuildTree(string id, int level)
             {
+                if (!relationships.Any(r => r.ParentId == id)) return;
+
                 if (!levels.ContainsKey(level))
                     levels[level] = new List<(string, JObject)>();
+
                 var instance = instances.FirstOrDefault(i => i["id"]?.ToString() == id);
                 if (instance != null && !levels[level].Any(l => l.Id == id))
                 {
                     levels[level].Add((id, instance));
-                    var children = relationships.Where(r => r.ParentId == id).Select(r => r.ChildId);
-                    foreach (var childId in children)
+                    usedIds.Add(id);
+                    foreach (var childId in relationships.Where(r => r.ParentId == id).Select(r => r.ChildId))
                     {
                         BuildTree(childId, level + 1);
                     }
@@ -94,197 +122,226 @@ namespace STEP_JSON_Application_for_ASKON
                 BuildTree(rootId, 0);
             }
 
-            const double nodeWidth = 200;
-            const double nodeHeight = 100;
-            const double verticalSpacing = 60;
-            const double horizontalSpacing = 80;
-
             double maxCanvasWidth = 0;
             double maxCanvasHeight = 0;
+
             foreach (var level in levels.OrderBy(l => l.Key))
             {
-                double levelX = level.Key * (nodeWidth + horizontalSpacing) + 20;
-                double levelY = 20;
+                double levelY = level.Key * (NodeHeight + VerticalSpacing) + 20;
+                int nodesInLevel = level.Value.Count;
+                double totalWidth = nodesInLevel * NodeWidth + (nodesInLevel - 1) * HorizontalSpacing;
+                double startX = (schemaCanvas.Width - totalWidth) / 2;
+                if (startX < 20) startX = 20;
 
+                int nodeIndex = 0;
                 foreach (var (id, instance) in level.Value)
                 {
+                    double levelX = startX + nodeIndex * (NodeWidth + HorizontalSpacing);
                     string type = instance["type"]?.ToString() ?? "unknown";
-                    string label = $"ID: {id}\nType: {type}";
+                    string label = GetFriendlyLabel(id, instance, instances);
 
-                    var node = CreateStyledRectangle(type, label, nodeWidth, nodeHeight);
-
+                    var node = CreateStyledEllipse(type, label);
                     Canvas.SetLeft(node, levelX);
                     Canvas.SetTop(node, levelY);
                     schemaCanvas.Children.Add(node);
                     nodes[id] = (node, levelX, levelY);
 
-                    levelY += nodeHeight + verticalSpacing;
+                    nodeIndex++;
+                    maxCanvasWidth = Math.Max(maxCanvasWidth, levelX + NodeWidth);
                 }
-
-                maxCanvasWidth = Math.Max(maxCanvasWidth, levelX + nodeWidth);
-                maxCanvasHeight = Math.Max(maxCanvasHeight, levelY);
+                maxCanvasHeight = Math.Max(maxCanvasHeight, levelY + NodeHeight);
             }
 
             schemaCanvas.Width = Math.Max(schemaCanvas.Width, maxCanvasWidth + 20);
-            schemaCanvas.Height = Math.Max(schemaCanvas.Height, maxCanvasHeight + 20);
+            schemaCanvas.Height = Math.Max(maxCanvasHeight + 20, schemaCanvas.Height);
 
-            foreach (var (parentId, childId, label, relType) in relationships)
+            foreach (var rel in relationships)
             {
+                string parentId = rel.ParentId;
+                string childId = rel.ChildId;
+                string label = rel.Label;
+                string relType = rel.Type;
+
                 if (nodes.ContainsKey(parentId) && nodes.ContainsKey(childId))
                 {
-                    var (parentNode, parentX, parentY) = nodes[parentId];
-                    var (childNode, childX, childY) = nodes[childId];
+                    var parent = nodes[parentId];
+                    var child = nodes[childId];
 
-                    double startX = parentX + nodeWidth;
-                    double startY = parentY + nodeHeight / 2;
-                    double endX = childX;
-                    double endY = childY + nodeHeight / 2;
-                    double midX = startX + (endX - startX) / 2;
+                    double startX = parent.X + NodeWidth / 2;
+                    double startY = parent.Y + NodeHeight;
+                    double endX = child.X + NodeWidth / 2;
+                    double endY = child.Y;
 
-                    var (line1, line2, line3, endShape) = CreateStyledConnection(relType, startX, startY, midX, endX, endY);
-
-                    schemaCanvas.Children.Add(line1);
-                    schemaCanvas.Children.Add(line2);
-                    schemaCanvas.Children.Add(line3);
-                    schemaCanvas.Children.Add(endShape);
+                    var connection = CreateSimpleConnection(relType, startX, startY, endX, endY);
+                    schemaCanvas.Children.Add(connection.Line);
+                    schemaCanvas.Children.Add(connection.Arrow);
 
                     var labelText = new TextBlock
                     {
-                        Text = relType,
+                        Text = label,
                         FontSize = 12,
                         Foreground = Brushes.Black,
                         Background = Brushes.White,
                         Padding = new Thickness(2),
-                        TextAlignment = TextAlignment.Center
+                        TextAlignment = TextAlignment.Center,
+                        TextWrapping = TextWrapping.Wrap,
+                        MaxWidth = 120
                     };
-                    labelText.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-                    double labelWidth = labelText.DesiredSize.Width;
-                    double labelHeight = labelText.DesiredSize.Height;
-
-                    Canvas.SetLeft(labelText, midX - labelWidth / 2);
-                    Canvas.SetTop(labelText, startY - labelHeight - 5);
+                    labelText.Measure(new Size(120, double.PositiveInfinity));
+                    double midX = startX + (endX - startX) / 2;
+                    double midY = startY + (endY - startY) / 2;
+                    Canvas.SetLeft(labelText, midX - labelText.DesiredSize.Width / 2);
+                    Canvas.SetTop(labelText, midY - labelText.DesiredSize.Height / 2);
                     schemaCanvas.Children.Add(labelText);
                 }
             }
         }
 
-        private UIElement CreateStyledRectangle(string type, string label, double width, double height)
+        private string GetQuantityLabel(string quantityId, List<JObject> instances)
+        {
+            if (string.IsNullOrEmpty(quantityId)) return "";
+
+            var quantity = instances.FirstOrDefault(i => i["id"]?.ToString() == quantityId && i["type"]?.ToString() == "measure_with_unit");
+            if (quantity == null) return "";
+
+            string value = quantity["attributes"]?["value_component"]?.ToString() ?? "";
+            return value.Trim();
+        }
+
+        private string GetUnitForQuantity(string quantityId, List<JObject> instances)
+        {
+            if (string.IsNullOrEmpty(quantityId)) return "шт.";
+
+            var quantity = instances.FirstOrDefault(i => i["id"]?.ToString() == quantityId && i["type"]?.ToString() == "measure_with_unit");
+            if (quantity == null) return "шт.";
+
+            string unitId = quantity["attributes"]?["unit_component"]?.ToString();
+            var unit = instances.FirstOrDefault(i => i["id"]?.ToString() == unitId && i["type"]?.ToString() == "context_dependent_unit");
+            string unitName = unit?["attributes"]?["id"]?.ToString() ?? "шт.";
+
+            return unitName;
+        }
+
+        private string GetFriendlyLabel(string id, JObject instance, List<JObject> instances)
+        {
+            string type = instance["type"]?.ToString() ?? "unknown";
+            string label = id;
+
+            if (type.Contains("product_definition"))
+            {
+                string defId = instance["attributes"]?["id"]?.ToString() ?? "Unknown Definition";
+                string formationId = instance["attributes"]?["formation"]?.ToString();
+
+                if (!string.IsNullOrEmpty(formationId))
+                {
+                    var formation = instances.FirstOrDefault(i => i["id"]?.ToString() == formationId);
+                    string productId = formation?["attributes"]?["of_product"]?.ToString();
+                    string version = formation?["attributes"]?["id"]?.ToString() ?? "Unknown Version";
+
+                    if (!string.IsNullOrEmpty(productId))
+                    {
+                        var product = instances.FirstOrDefault(i => i["id"]?.ToString() == productId);
+                        string productCode = product?["attributes"]?["id"]?.ToString() ?? "Unknown Product";
+                        string productName = product?["attributes"]?["name"]?.ToString() ?? "";
+
+                        label = $"{defId} {productCode} {productName} версия {version}".Trim();
+                    }
+                    else
+                    {
+                        label = $"{defId} версия {version}";
+                    }
+                }
+                else
+                {
+                    label = defId;
+                }
+            }
+            else if (type == "eskd_product")
+            {
+                string productCode = instance["attributes"]?["id"]?.ToString() ?? "Unknown Product";
+                string productName = instance["attributes"]?["name"]?.ToString() ?? "";
+                label = $"{productCode} {productName}".Trim();
+            }
+            else if (type == "organization")
+            {
+                label = instance["attributes"]?["name"]?.ToString() ?? "Организация";
+            }
+
+            return label;
+        }
+
+        private UIElement CreateStyledEllipse(string type, string label)
         {
             var textBlock = new TextBlock
             {
                 Text = label,
                 TextWrapping = TextWrapping.Wrap,
-                VerticalAlignment = VerticalAlignment.Center,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                Margin = new Thickness(10),
+                TextAlignment = TextAlignment.Center,
                 FontSize = 12,
-                MaxWidth = width - 20,
-                TextAlignment = TextAlignment.Center
+                MaxWidth = NodeWidth - 20,
+                VerticalAlignment = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Center
             };
 
-            var rectangle = new Rectangle
+            var ellipse = new Ellipse
             {
-                Width = width,
-                Height = height,
-                Fill = Brushes.Transparent,
-                Stroke = Brushes.Black
-            };
-
-            switch (type)
-            {
-                case "eskd_product":
-                    rectangle.StrokeThickness = 2;
-                    break;
-                case "eskd_product_definition_formation":
-                    rectangle.StrokeThickness = 1;
-                    break;
-                case "product_definition":
-                    rectangle.StrokeThickness = 1;
-                    rectangle.StrokeDashArray = new DoubleCollection { 4, 2 };
-                    break;
-                case "organization":
-                    rectangle.StrokeThickness = 2;
-                    rectangle.StrokeDashArray = new DoubleCollection { 2, 2 };
-                    break;
-                default:
-                    rectangle.StrokeThickness = 1;
-                    break;
-            }
-
-            var container = new Canvas
-            {
-                Width = width,
-                Height = height
-            };
-            container.Children.Add(rectangle);
-            container.Children.Add(textBlock);
-
-            textBlock.Measure(new Size(width - 20, double.PositiveInfinity));
-            Canvas.SetLeft(textBlock, 10);
-            Canvas.SetTop(textBlock, (height - textBlock.DesiredSize.Height) / 2);
-
-            return container;
-        }
-
-        private (Line Line1, Line Line2, Line Line3, Shape EndShape) CreateStyledConnection(string relType, double startX, double startY, double midX, double endX, double endY)
-        {
-            var line1 = new Line { X1 = startX, Y1 = startY, X2 = midX, Y2 = startY };
-            var line2 = new Line { X1 = midX, Y1 = startY, X2 = midX, Y2 = endY };
-            var line3 = new Line { X1 = midX, Y1 = endY, X2 = endX, Y2 = endY };
-            Shape endShape;
-
-            endShape = new Ellipse
-            {
-                Width = 10,
-                Height = 10,
+                Width = NodeWidth,
+                Height = NodeHeight,
                 Fill = Brushes.Transparent,
                 Stroke = Brushes.Black,
                 StrokeThickness = 1
             };
 
-            switch (relType)
+            var container = new Canvas
             {
-                case "composition":
-                    line1.Stroke = Brushes.Black;
-                    line2.Stroke = Brushes.Black;
-                    line3.Stroke = Brushes.Black;
-                    line1.StrokeThickness = 2;
-                    line2.StrokeThickness = 2;
-                    line3.StrokeThickness = 2;
-                    break;
-                case "organization":
-                    line1.Stroke = Brushes.Black;
-                    line2.Stroke = Brushes.Black;
-                    line3.Stroke = Brushes.Black;
-                    line1.StrokeThickness = 1;
-                    line2.StrokeThickness = 1;
-                    line3.StrokeThickness = 1;
-                    line1.StrokeDashArray = new DoubleCollection { 4, 2 };
-                    line2.StrokeDashArray = new DoubleCollection { 4, 2 };
-                    line3.StrokeDashArray = new DoubleCollection { 4, 2 };
-                    break;
-                case "version":
-                    line1.Stroke = Brushes.Black;
-                    line2.Stroke = Brushes.Black;
-                    line3.Stroke = Brushes.Black;
-                    line1.StrokeThickness = 1;
-                    line2.StrokeThickness = 1;
-                    line3.StrokeThickness = 1;
-                    break;
-                default:
-                    line1.Stroke = Brushes.Black;
-                    line2.Stroke = Brushes.Black;
-                    line3.Stroke = Brushes.Black;
-                    line1.StrokeThickness = 1;
-                    line2.StrokeThickness = 1;
-                    line3.StrokeThickness = 1;
-                    break;
+                Width = NodeWidth,
+                Height = NodeHeight
+            };
+            container.Children.Add(ellipse);
+            container.Children.Add(textBlock);
+
+            textBlock.Measure(new Size(NodeWidth - 20, NodeHeight));
+            double textWidth = textBlock.DesiredSize.Width;
+            double textHeight = textBlock.DesiredSize.Height;
+            Canvas.SetLeft(textBlock, (NodeWidth - textWidth) / 2);
+            Canvas.SetTop(textBlock, (NodeHeight - textHeight) / 2);
+
+            return container;
+        }
+
+        private (Line Line, Polygon Arrow) CreateSimpleConnection(string relType, double startX, double startY, double endX, double endY)
+        {
+            var line = new Line
+            {
+                X1 = startX,
+                Y1 = startY,
+                X2 = endX,
+                Y2 = endY,
+                Stroke = Brushes.Black,
+                StrokeThickness = 1
+            };
+
+            if (relType == "organization")
+            {
+                line.StrokeDashArray = new DoubleCollection { 4, 2 };
             }
 
-            Canvas.SetLeft(endShape, endX - 5);
-            Canvas.SetTop(endShape, endY - 5);
+            var arrow = new Polygon
+            {
+                Points = new PointCollection
+                {
+                    new Point(0, 0),
+                    new Point(-8, 4),
+                    new Point(-8, -4)
+                },
+                Fill = Brushes.Black
+            };
+            double angle = Math.Atan2(endY - startY, endX - startX) * 180 / Math.PI;
+            arrow.RenderTransform = new RotateTransform(angle, 0, 0);
+            Canvas.SetLeft(arrow, endX);
+            Canvas.SetTop(arrow, endY);
 
-            return (line1, line2, line3, endShape);
+            return (line, arrow);
         }
     }
 }
