@@ -8,29 +8,137 @@
         mc:Ignorable="d"
         Title="Главное меню" Height="450" Width="800">
     <Window.Resources>
+        <!--СТИЛИ ДЛЯ КНОПОК ОБЫЧНЫЕ-->
         <Style TargetType="Button">
             <Setter Property="Margin" Value="5"/>
             <Setter Property="MinHeight" Value="30"/>
             <Setter Property="Padding" Value="3"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" 
+                            CornerRadius="5" 
+                            BorderBrush="{TemplateBinding BorderBrush}" 
+                            BorderThickness="0">
+                            <ContentPresenter HorizontalAlignment="Center" 
+                                          VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        
+        <!--СТИЛИ ДЛЯ КНОПКИ ПЕРЕКЛЮЧЕНИЯ РЕЖИМОВ РЕДАКТИРОВАНИЯ И ПРОСМОТРА-->
+        <Style x:Key="ToggleButtonStyle" TargetType="ToggleButton">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="1"/>
+
+            <Style.Triggers>
+                <Trigger Property="IsChecked" Value="True">
+                    <Setter Property="Background" Value="#009688"/>
+                    <Setter Property="Foreground" Value="White"/>
+                </Trigger>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#00796B"/>
+                    <Setter Property="Foreground" Value="White"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!--ПОИСК-->
+        <Style x:Key="SearchTextBoxStyle" TargetType="TextBox">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border Background="{TemplateBinding Background}" 
+                        BorderBrush="Gray" 
+                        BorderThickness="{TemplateBinding BorderThickness}" 
+                        CornerRadius="5">
+                            <ScrollViewer x:Name="PART_ContentHost" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Background" Value="#086358"/>
+            <Setter Property="Foreground" Value="#C0C0C0"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="MinHeight" Value="25"/>
+            <Setter Property="Margin" Value="15, 0"/>
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
         </Style>
     </Window.Resources>
 
+    <!-- Верхняя панель на зеленом фоне -->
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="4.5*"/>
-            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="4*"/>
         </Grid.ColumnDefinitions>
 
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
+        <Grid Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Background="#00796B">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="2*"/>
+                <ColumnDefinition Width="2*"/>
+            </Grid.ColumnDefinitions>
+
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <Image Source="E:/STEP-JSON Application for ASKON/Static Files/jsonLogoForMenu.png" Grid.Column="0" VerticalAlignment="Center" Height="40"/>
+            
+            <!--сепаратор вертикальный-->
+            <Rectangle VerticalAlignment="Stretch" Grid.Column="1" Width="1" Margin="2" Stroke="White" />
+            
+            
+            <TextBlock Text="JSON VIEWER" Grid.Column="2" VerticalAlignment="Center" Margin="15,0" Foreground="White" FontSize="16"/>
+
+            
+            <ToggleButton x:Name="ViewButton" Grid.Column="3" 
+                  Style="{StaticResource ToggleButtonStyle}" 
+                  Content="ПРОСМОТР" 
+                  VerticalAlignment="Stretch"
+                  Checked="ViewButton_Checked"/>
+
+            <ToggleButton x:Name="EditorButton" Grid.Column="4" 
+                  HorizontalAlignment="Stretch" 
+                  Style="{StaticResource ToggleButtonStyle}" 
+                  Content="РЕДАКТОР" 
+                  VerticalAlignment="Stretch"
+                  Checked="EditorButton_Checked"/>
+
+            <TextBox Style="{StaticResource SearchTextBoxStyle}" 
+             Width="Auto" 
+             Grid.Column="5" 
+             VerticalAlignment="Center" 
+             TextChanged="TextBox_TextChanged" 
+             Text="    ПОИСК"/>
+
+            <TextBlock Text="Название файла по умолчанию" Grid.Column="6" VerticalAlignment="Center" Margin="5,0" Foreground="White" HorizontalAlignment="Right"/>
+        </Grid>
+
         <!-- Меню -->
-        <Menu x:Name="Menu" Grid.Column="0" Grid.ColumnSpan="4" VerticalAlignment="Top">
+        <Menu x:Name="Menu" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" VerticalAlignment="Top" Background="#E0EFED" Padding="5">
             <MenuItem Header="Файл">
                 <MenuItem Header="Открыть" InputGestureText="Ctrl + O" Click="OpenFile_Click"/>
                 <MenuItem Header="Сохранить" InputGestureText="Ctrl + S" Click="SaveFile_Click"/>
@@ -60,42 +168,35 @@
             <MenuItem Header="Справка"/>
         </Menu>
 
-        <!-- Панель инструментов -->
-        <ToolBarTray x:Name="HorizontalToolPanel" 
-                     Grid.Column="0" 
-                     Grid.ColumnSpan="3"
-                     Grid.Row="1"
-                     Orientation="Horizontal">
-            <ToolBar>
-                <Button Content="Импорт файла" ToolTip="Импортируйте файл" x:Name="ImportButton" Click="ImportButton_Click"/>
-                <Separator/>
-                <Button Content="Сохранить" />
-                <Separator/>
-                <TextBox Foreground="LightGray" Width="Auto">Поиск...</TextBox>
-            </ToolBar>
-        </ToolBarTray>
-
-
-
         <!-- Левая панель с загруженными файлами -->
-        <StackPanel Grid.Column="0" Grid.Row="2" Margin="10 0" x:Name="LeftPanel" >
-            <Expander Header="Загруженные файлы" Margin="10" IsExpanded="False">
-                <StackPanel MaxWidth="250">
-                    <ListBox Margin="5" Height="Auto"
-                             Width="Auto"
-                             x:Name="LoadedFilesListBox"
-                             Visibility="Collapsed"
-                              SelectionChanged="LoadedFilesListBox_SelectionChanged"/>
+        <StackPanel Grid.Column="0" Grid.Row="2" Margin="10 0" x:Name="LeftPanel"  Background="#EEEEEE">
+            <TextBlock Text="Загруженные файлы" Background="#E8E8E8" Padding="5"/>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Row="0">
+                    <ListBox Margin="5"
+                      x:Name="LoadedFilesListBox"
+                      Visibility="Collapsed"
+                      SelectionChanged="LoadedFilesListBox_SelectionChanged"/>
+
                     <TextBlock x:Name="EmptyFilesMessage" 
-                       Text="Список загруженных файлов пуст,воспользуйтесь импортом" 
+                       Text="Список загруженных файлов пуст, воспользуйтесь импортом" 
                        Foreground="Gray" 
-                       Height="Auto"
                        TextWrapping="Wrap"
                        Visibility="Visible" 
-
                        Margin="5"/>
+                </Grid>
+
+                <StackPanel Grid.Row="1" Orientation="Vertical">
+                    <Separator />
+                    <Button Content="Загрузить" ToolTip="Импортируйте файл" x:Name="ImportButton" Click="ImportButton_Click"/>
+                    <Button Content="Сохранить"/>
                 </StackPanel>
-            </Expander>
+            </Grid>
         </StackPanel>
 
         <!-- Основная панель с вкладками -->
@@ -130,65 +231,5 @@
             <TextBlock Text="0 ошибок" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="10" x:Name="ErrorCountTextBlock"/>
         </Grid>
 
-        <!-- Правая панель с кнопками просмотра и редактора -->
-        <Grid Grid.Column="2" Grid.Row="2" Margin="10" x:Name="RightPanel">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
-
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-
-            <ToggleButton x:Name="ViewButton" Grid.Column="0" Grid.Row="0" 
-                          HorizontalAlignment="Stretch" 
-                          Checked="ViewButton_Checked">
-                <ToggleButton.Style>
-                    <Style TargetType="ToggleButton">
-                        <Setter Property="Content" Value="Просмотр"/>
-                        <Setter Property="Background" Value="LightGray"/>
-                        <Setter Property="Foreground" Value="Black"/>
-                        <Setter Property="BorderBrush" Value="DarkGray"/>
-                        <Setter Property="BorderThickness" Value="1"/>
-                        <Setter Property="Padding" Value="5"/>
-                        <Style.Triggers>
-                            <Trigger Property="IsChecked" Value="True">
-                                <Setter Property="Background" Value="DarkGray"/>
-                                <Setter Property="Foreground" Value="Black"/>
-                            </Trigger>
-                        </Style.Triggers>
-                    </Style>
-                </ToggleButton.Style>
-            </ToggleButton>
-
-            <ToggleButton x:Name="EditorButton" Grid.Column="1" Grid.Row="0" 
-                          HorizontalAlignment="Stretch" 
-                          Checked="EditorButton_Checked">
-                <ToggleButton.Style>
-                    <Style TargetType="ToggleButton">
-                        <Setter Property="Content" Value="Редактор"/>
-                        <Setter Property="Background" Value="LightGray"/>
-                        <Setter Property="Foreground" Value="Black"/>
-                        <Setter Property="BorderBrush" Value="DarkGray"/>
-                        <Setter Property="BorderThickness" Value="1"/>
-                        <Setter Property="Padding" Value="5"/>
-                        <Style.Triggers>
-                            <Trigger Property="IsChecked" Value="True">
-                                <Setter Property="Background" Value="DarkGray"/>
-                                <Setter Property="Foreground" Value="Black"/>
-                            </Trigger>
-                        </Style.Triggers>
-                    </Style>
-                </ToggleButton.Style>
-            </ToggleButton>
-            <TextBox Margin="0 5" x:Name="EditorTextBox" AcceptsReturn="True" Grid.Row="1" Grid.ColumnSpan="2"/>
-        </Grid>
-
-        <TextBlock Grid.Row="3" Grid.ColumnSpan="3" 
-                   HorizontalAlignment="Center" 
-                   VerticalAlignment="Top" Margin="5" 
-                   x:Name="ScaleTextBlock" Text="Масштаб:  "/>
     </Grid>
 </Window>
