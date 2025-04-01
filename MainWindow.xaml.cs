@@ -27,7 +27,7 @@ namespace STEP_JSON_Application_for_ASKON
         public MainWindow()
         {
             InitializeComponent();
-            ViewButton.IsChecked = true;
+            //ViewButton.IsChecked = true;
 
             // Подключаем обработчик события MouseWheel к SchemaCanvas
             SchemaCanvas.MouseWheel += SchemaCanvas_MouseWheel;
@@ -224,6 +224,11 @@ namespace STEP_JSON_Application_for_ASKON
         private void Exit_Click(object sender, RoutedEventArgs e)
         {
             Application.Current.Shutdown();
+        }
+
+        private void TextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+
         }
 
 
