@@ -52,11 +52,47 @@ namespace STEP_JSON_Application_for_ASKON
                 if (instance["attributes"] is JObject attributes)
                 {
                     var attrsNode = new TreeNode { Name = "Атрибуты", IsExpanded = true };
-                    ProcessJObject(attributes, attrsNode);
+                    ProcessFilteredAttributes(attributes, attrsNode);
                     instanceNode.Children.Add(attrsNode);
                 }
 
                 parentNode.Children.Add(instanceNode);
+            }
+        }
+
+        private void ProcessFilteredAttributes(JObject attributes, TreeNode parentNode)
+        {
+            // Список разрешенных атрибутов
+            var allowedAttributes = new HashSet<string> { "id", "name", "description" };
+
+            foreach (var property in attributes.Properties())
+            {
+                // Пропускаем атрибуты, которых нет в списке разрешенных
+                if (!allowedAttributes.Contains(property.Name.ToLower()))
+                    continue;
+
+                var node = new TreeNode { Name = property.Name };
+
+                switch (property.Value.Type)
+                {
+                    case JTokenType.Object:
+                        node.Value = "{...}";
+                        node.IsExpanded = true;
+                        ProcessJObject((JObject)property.Value, node);
+                        break;
+
+                    case JTokenType.Array:
+                        node.Value = $"[{property.Value.Count()}]";
+                        node.IsExpanded = true;
+                        ProcessArray((JArray)property.Value, node);
+                        break;
+
+                    default:
+                        node.Value = property.Value.ToString();
+                        break;
+                }
+
+                parentNode.Children.Add(node);
             }
         }
 
