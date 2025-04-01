@@ -134,7 +134,12 @@
              TextChanged="TextBox_TextChanged" 
              Text="    ПОИСК"/>
 
-            <TextBlock Text="Название файла по умолчанию" Grid.Column="6" VerticalAlignment="Center" Margin="5,0" Foreground="White" HorizontalAlignment="Right"/>
+            <TextBlock x:Name="DefaultFileNameTextBlock"
+                       Text="Название файла по умолчанию"
+                       Grid.Column="6" VerticalAlignment="Center" 
+                       Margin="5,0" Foreground="White"
+                       HorizontalAlignment="Right"/>
+        
         </Grid>
 
         <!-- Меню -->

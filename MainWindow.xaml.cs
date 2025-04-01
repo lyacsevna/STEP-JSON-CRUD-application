@@ -83,7 +83,7 @@ namespace STEP_JSON_Application_for_ASKON
                         var treeNodes = treeManager.FormatJsonObject(jsonObject);
 
                         TextTabTreeView.Items.Clear();
-                        SchemaCanvas.Children.Clear(); ;
+                        SchemaCanvas.Children.Clear();
 
                         foreach (var node in treeNodes)
                         {
@@ -100,6 +100,7 @@ namespace STEP_JSON_Application_for_ASKON
 
                     LoadedFilesListBox.Items.Add(System.IO.Path.GetFileName(filePath));
                     loadedFilePaths.Add(filePath);
+                    DefaultFileNameTextBlock.Text = filePath;
                     UpdateLoadedFilesList();
                 }
                 else
@@ -150,7 +151,8 @@ namespace STEP_JSON_Application_for_ASKON
 
                     treeManager.ExpandAllTreeViewItems(TextTabTreeView);
                     schemaManager.GenerateSchema(jsonObject, SchemaCanvas);
-                    
+                    DefaultFileNameTextBlock.Text = selectedFilePath;
+
                 }
             }
         }
