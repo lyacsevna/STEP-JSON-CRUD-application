@@ -72,8 +72,11 @@
         </Style>
     </Window.Resources>
 
-    <!-- Верхняя панель на зеленом фоне -->
+   
     <Grid>
+        
+        
+        <!--Общие настройки основного грида-->
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="4*"/>
@@ -85,7 +88,8 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <Grid Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Background="#00796B">
+        <!--Грид для элементов верхней панели (зеленый фон)-->
+        <Grid Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Background="#00796B"> 
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
@@ -95,15 +99,6 @@
                 <ColumnDefinition Width="2*"/>
                 <ColumnDefinition Width="2*"/>
             </Grid.ColumnDefinitions>
-
-            <Grid.RowDefinitions>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
 
             <Image Source="StaticFiles/jsonLogoForMenu.png"
                    Grid.Column="0"
@@ -137,7 +132,6 @@
              Text="    ПОИСК"/>
 
             <TextBlock x:Name="DefaultFileNameTextBlock"
-                       Text="Название файла по умолчанию"
                        Grid.Column="6" VerticalAlignment="Center" 
                        Margin="5,0" Foreground="White"
                        HorizontalAlignment="Right"/>
@@ -176,35 +170,35 @@
         </Menu>
 
         <!-- Левая панель с загруженными файлами -->
-        <StackPanel Grid.Column="0" Grid.Row="2" Margin="10 0" x:Name="LeftPanel"  Background="#EEEEEE">
-            <TextBlock Text="Загруженные файлы" Background="#E8E8E8" Padding="5"/>
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
 
-                <Grid Grid.Row="0">
-                    <ListBox Margin="5"
-                      x:Name="LoadedFilesListBox"
-                      Visibility="Collapsed"
-                      SelectionChanged="LoadedFilesListBox_SelectionChanged"/>
+        <Grid Grid.Column="0" Grid.Row="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <StackPanel Grid.Row="0" Grid.Column="0">
+                <TextBlock Text="Загруженные файлы" Background="#E8E8E8" Padding="5"/>
 
-                    <TextBlock x:Name="EmptyFilesMessage" 
+                <ListBox Margin="5"
+                     x:Name="LoadedFilesListBox"
+                     Visibility="Collapsed"
+                     VerticalAlignment="Stretch"
+                     SelectionChanged="LoadedFilesListBox_SelectionChanged"/>
+
+                <TextBlock x:Name="EmptyFilesMessage" 
                        Text="Список загруженных файлов пуст, воспользуйтесь импортом" 
                        Foreground="Gray" 
                        TextWrapping="Wrap"
                        Visibility="Visible" 
                        Margin="5"/>
-                </Grid>
+            </StackPanel>
 
-                <StackPanel Grid.Row="1" Orientation="Vertical">
-                    <Separator />
-                    <Button Content="Загрузить" ToolTip="Импортируйте файл" x:Name="ImportButton" Click="ImportButton_Click"/>
-                    <Button Content="Сохранить"/>
-                </StackPanel>
-            </Grid>
-        </StackPanel>
+            <StackPanel Grid.Row="1" Orientation="Vertical" >
+                <Separator />
+                <Button Content="Загрузить" ToolTip="Импортируйте файл" x:Name="ImportButton" Click="ImportButton_Click"/>
+                <Button Content="Сохранить"/>
+            </StackPanel>
+        </Grid>
 
         <!-- Основная панель с вкладками -->
         <Grid Grid.Column="1" Grid.Row="2" Margin="10" x:Name="MainGrid">
