@@ -105,7 +105,9 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <Image Source="E:/STEP-JSON Application for ASKON/Static Files/jsonLogoForMenu.png" Grid.Column="0" VerticalAlignment="Center" Height="40"/>
+            <Image Source="StaticFiles/jsonLogoForMenu.png"
+                   Grid.Column="0"
+                   VerticalAlignment="Center" Height="40"/>
             
             <!--сепаратор вертикальный-->
             <Rectangle VerticalAlignment="Stretch" Grid.Column="1" Width="1" Margin="2" Stroke="White" />
