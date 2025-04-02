@@ -233,20 +233,87 @@ namespace STEP_JSON_Application_for_ASKON
 
         }
 
+        //ПРАВКА
+
+        private void CutButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (StepJsonTextBox != null)
+            {
+                StepJsonTextBox.Copy(); // Copy selected text
+                StepJsonTextBox.SelectedText = ""; // Remove selected text
+            }
+        }
+
+        private void CopyButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (StepJsonTextBox != null)
+            {
+                StepJsonTextBox.Copy(); // Copy selected text to clipboard
+            }
+        }
+
+        private void PasteButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (StepJsonTextBox != null)
+            {
+                StepJsonTextBox.Paste(); // Paste text from clipboard
+            }
+        }
+
+        private void CancelButton_Click(object sender, RoutedEventArgs e)
+        {
+            // Logic for cancelling the last action can be implemented here if needed
+            // For instance, you can implement an undo functionality
+            if (StepJsonTextBox != null)
+            {
+                StepJsonTextBox.Undo(); // Undo the last action
+            }
+        }
+
+        private void ReturnButton_Click(object sender, RoutedEventArgs e)
+        {
+            // Logic for returning to the previous state can be implemented here if needed
+            // For example, you might want to navigate back in a navigation context
+        }
+
+        private void DeleteButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (StepJsonTextBox != null)
+            {
+                StepJsonTextBox.SelectedText = ""; // Remove selected text
+            }
+        }
+
+        private void SelectAllButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (StepJsonTextBox != null)
+            {
+                StepJsonTextBox.SelectAll(); // Select all text in the TextEditor
+            }
+        }
+
+        //CПРАВКА
+        private void InformationMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+           
+        }
+
+
+
 
         // BUTTONS FOR SWITCHING THE VIEWING AND EDITING MODE
 
-        private void ViewButton_Checked(object sender, RoutedEventArgs e)
-        {
-            EditorButton.IsChecked = false;
-            StepJsonTextBox.IsReadOnly = true;
-        }
+        //private void ViewButton_Checked(object sender, RoutedEventArgs e)
+        //{
+        //    EditorButton.IsChecked = false;
+        //    StepJsonTextBox.IsReadOnly = true;
+        //}
 
-        private void EditorButton_Checked(object sender, RoutedEventArgs e)
-        {
-            ViewButton.IsChecked = false;
-            StepJsonTextBox.IsReadOnly = false;
-        }
+        //private void EditorButton_Checked(object sender, RoutedEventArgs e)
+        //{
+        //    ViewButton.IsChecked = false;
+        //    StepJsonTextBox.IsReadOnly = false;
+        //}
 
     }
 

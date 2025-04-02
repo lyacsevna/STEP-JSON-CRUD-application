@@ -111,7 +111,7 @@
             <TextBlock Text="JSON VIEWER" Grid.Column="2" VerticalAlignment="Center" Margin="15,0" Foreground="White" FontSize="16"/>
 
             
-            <ToggleButton x:Name="ViewButton" Grid.Column="3" 
+            <!--<ToggleButton x:Name="ViewButton" Grid.Column="3" 
                   Style="{StaticResource ToggleButtonStyle}" 
                   Content="ПРОСМОТР" 
                   VerticalAlignment="Stretch"
@@ -122,7 +122,7 @@
                   Style="{StaticResource ToggleButtonStyle}" 
                   Content="РЕДАКТОР" 
                   VerticalAlignment="Stretch"
-                  Checked="EditorButton_Checked"/>
+                  Checked="EditorButton_Checked"/>-->
 
             <TextBox Style="{StaticResource SearchTextBoxStyle}" 
              Width="Auto" 
@@ -140,33 +140,38 @@
 
         <!-- Меню -->
         <Menu x:Name="Menu" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" VerticalAlignment="Top" Background="#E0EFED" Padding="5">
+           
+            
             <MenuItem Header="Файл">
+                <MenuItem Header="Создать" InputGestureText="Ctrl + N"/>
                 <MenuItem Header="Открыть" InputGestureText="Ctrl + O" Click="OpenFile_Click"/>
                 <MenuItem Header="Сохранить" InputGestureText="Ctrl + S" Click="SaveFile_Click"/>
                 <MenuItem Header="Сохранить как" InputGestureText="Ctrl + Shift + S" Click="SaveAsFile_Click"/>
                 <Separator/>
                 <MenuItem Header="Выход" Click="Exit_Click"/>
             </MenuItem>
+            
+            
+            
             <MenuItem Header="Правка">
-                <MenuItem Header="Отменить" InputGestureText="Ctrl + Z"/>
-                <MenuItem Header="Вернуть" InputGestureText="Ctrl + Y" />
-                <MenuItem Header="Отменить последнее глобальное изменение"/>
-                <MenuItem Header="Повторить последнее глобальное изменение"/>
+
+                <MenuItem Header="Вырезать" InputGestureText="Ctrl + X" Click="CutButton_Click"/>
+                <MenuItem Header="Копировать" InputGestureText="Ctrl + C" Click="CopyButton_Click"/>
+                <MenuItem Header="Вставить" InputGestureText="Ctrl + V" Click="PasteButton_Click"/>
                 <Separator/>
-                <MenuItem Header="Вырезать" InputGestureText="Ctrl + X"/>
-                <MenuItem Header="Копировать" InputGestureText="Ctrl + C" />
-                <MenuItem Header="Вставить" InputGestureText="Ctrl + V"/>
-                <MenuItem Header="Показать журнал буфера обмена" InputGestureText="Ctrl + Shift + V"/>
-                <MenuItem Header="Дублировать" InputGestureText="Ctrl + D"/>
+                <MenuItem Header="Отменить" InputGestureText="Ctrl + Z" Click="CancelButton_Click"/>
+                <MenuItem Header="Вернуть" InputGestureText="Ctrl + Y" Click="ReturnButton_Click"/>
                 <Separator/>
-                <MenuItem Header="Удалить" InputGestureText="Del"/>
+                <MenuItem Header="Удалить" InputGestureText="Del" Click="DeleteButton_Click"/>
                 <Separator/>
-                <MenuItem Header="Выделить все" InputGestureText="Ctrl + A"/>
+                <MenuItem Header="Выделить все" InputGestureText="Ctrl + A" Click="SelectAllButton_Click"/>
 
 
             </MenuItem>
-            <MenuItem Header="Вид"/>
-            <MenuItem Header="Справка"/>
+            <MenuItem Header="Вид">
+                <MenuItem Header="Сбросить масштаб" InputGestureText="Ctrl + 0"/>
+            </MenuItem>
+            <MenuItem Header="Справка" Click="InformationMenuItem_Click"/>
         </Menu>
 
         <!-- Левая панель с загруженными файлами -->
@@ -196,7 +201,7 @@
             <StackPanel Grid.Row="1" Orientation="Vertical" >
                 <Separator />
                 <Button Content="Загрузить" ToolTip="Импортируйте файл" x:Name="ImportButton" Click="ImportButton_Click"/>
-                <Button Content="Сохранить"/>
+                <Button Content="Сохранить" Click="SaveFile_Click"/>
             </StackPanel>
         </Grid>
 
