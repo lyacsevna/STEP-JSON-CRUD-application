@@ -19,7 +19,8 @@ namespace STEP_JSON_Application_for_ASKON
 
 
         private List<string> loadedFilePaths = new List<string>(); //для хранения путей загруженных файлов
-        private Stack<string> undoStack = new Stack<string>(); // для метода возврата изменений в меню
+        private Stack<string> undoStack = new Stack<string>();
+        private string lastText = string.Empty;
 
         private JsonManager jsonManager = new JsonManager();
         private TreeManager treeManager = new TreeManager();
@@ -28,6 +29,9 @@ namespace STEP_JSON_Application_for_ASKON
         public MainWindow()
         {
             InitializeComponent();
+            undoStack.Push(lastText);
+
+
             //ViewButton.IsChecked = true;
 
             // Подключаем обработчик события MouseWheel к SchemaCanvas
@@ -272,15 +276,30 @@ namespace STEP_JSON_Application_for_ASKON
 
         private void StepJsonTextBox_TextChanged(object sender, EventArgs e)
         {
-            undoStack.Push(StepJsonTextBox.Text);
+            // Добавляем текущее состояние текста в стек только если оно отличается от последнего
+            if (StepJsonTextBox.Text != lastText)
+            {
+                undoStack.Push(lastText);
+                lastText = StepJsonTextBox.Text;
+            }
         }
 
         private void ReturnButton_Click(object sender, RoutedEventArgs e)
         {
-            if (undoStack.Count > 1)
+            // Проверяем, есть ли что извлекать из стека
+            if (undoStack.Count > 1) // > 1, чтобы оставить текущее состояние
             {
-                undoStack.Pop();
-                StepJsonTextBox.Text = undoStack.Peek();
+                // Отключаем обработчик события TextChanged
+                StepJsonTextBox.TextChanged -= StepJsonTextBox_TextChanged;
+
+                undoStack.Pop(); // Удаляем текущее состояние
+                StepJsonTextBox.Text = undoStack.Peek(); // Получаем предыдущее состояние
+
+                // Обновляем текущее состояние
+                lastText = StepJsonTextBox.Text;
+
+                // Включаем обработчик события обратно
+                StepJsonTextBox.TextChanged += StepJsonTextBox_TextChanged;
             }
         }
 
