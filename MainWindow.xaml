@@ -210,9 +210,10 @@
             <TabControl x:Name="MainTabControl">
                 <TabItem Header="STEP-JSON" x:Name="StepJsonTab">
                     <avalonEdit:TextEditor x:Name="StepJsonTextBox" 
-                               SyntaxHighlighting="Json"
-                               ShowLineNumbers="True" 
-                               VerticalScrollBarVisibility="Auto" />
+                       SyntaxHighlighting="Json"
+                       ShowLineNumbers="True" 
+                       VerticalScrollBarVisibility="Auto" 
+                       TextChanged="StepJsonTextBox_TextChanged"/>
                 </TabItem>
                 <TabItem Header="ТЕКСТ" x:Name="TextTab">
                     <TreeView x:Name="TextTabTreeView" BorderThickness="0" Background="Transparent">

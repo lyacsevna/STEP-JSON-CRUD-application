@@ -19,6 +19,7 @@ namespace STEP_JSON_Application_for_ASKON
 
 
         private List<string> loadedFilePaths = new List<string>(); //для хранения путей загруженных файлов
+        private Stack<string> undoStack = new Stack<string>(); // для метода возврата изменений в меню
 
         private JsonManager jsonManager = new JsonManager();
         private TreeManager treeManager = new TreeManager();
@@ -239,8 +240,8 @@ namespace STEP_JSON_Application_for_ASKON
         {
             if (StepJsonTextBox != null)
             {
-                StepJsonTextBox.Copy(); // Copy selected text
-                StepJsonTextBox.SelectedText = ""; // Remove selected text
+                StepJsonTextBox.Copy();
+                StepJsonTextBox.SelectedText = "";
             }
         }
 
@@ -248,7 +249,7 @@ namespace STEP_JSON_Application_for_ASKON
         {
             if (StepJsonTextBox != null)
             {
-                StepJsonTextBox.Copy(); // Copy selected text to clipboard
+                StepJsonTextBox.Copy();
             }
         }
 
@@ -256,31 +257,38 @@ namespace STEP_JSON_Application_for_ASKON
         {
             if (StepJsonTextBox != null)
             {
-                StepJsonTextBox.Paste(); // Paste text from clipboard
+                StepJsonTextBox.Paste();
             }
         }
 
         private void CancelButton_Click(object sender, RoutedEventArgs e)
         {
-            // Logic for cancelling the last action can be implemented here if needed
-            // For instance, you can implement an undo functionality
             if (StepJsonTextBox != null)
             {
-                StepJsonTextBox.Undo(); // Undo the last action
+                StepJsonTextBox.Undo();
             }
+        }
+
+
+        private void StepJsonTextBox_TextChanged(object sender, EventArgs e)
+        {
+            undoStack.Push(StepJsonTextBox.Text);
         }
 
         private void ReturnButton_Click(object sender, RoutedEventArgs e)
         {
-            // Logic for returning to the previous state can be implemented here if needed
-            // For example, you might want to navigate back in a navigation context
+            if (undoStack.Count > 1)
+            {
+                undoStack.Pop();
+                StepJsonTextBox.Text = undoStack.Peek();
+            }
         }
 
         private void DeleteButton_Click(object sender, RoutedEventArgs e)
         {
             if (StepJsonTextBox != null)
             {
-                StepJsonTextBox.SelectedText = ""; // Remove selected text
+                StepJsonTextBox.SelectedText = "";
             }
         }
 
@@ -288,7 +296,7 @@ namespace STEP_JSON_Application_for_ASKON
         {
             if (StepJsonTextBox != null)
             {
-                StepJsonTextBox.SelectAll(); // Select all text in the TextEditor
+                StepJsonTextBox.SelectAll();
             }
         }
 
@@ -297,6 +305,8 @@ namespace STEP_JSON_Application_for_ASKON
         {
            
         }
+
+       
 
 
 
