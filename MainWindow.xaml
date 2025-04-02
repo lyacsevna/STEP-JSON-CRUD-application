@@ -172,6 +172,7 @@
                 <MenuItem Header="Сбросить масштаб" InputGestureText="Ctrl + 0"/>
             </MenuItem>
             <MenuItem Header="Справка" Click="InformationMenuItem_Click"/>
+            <MenuItem Header="ТЕСТОВАЯ ПРОВЕРКА ФАЙЛА" Click="TestValidButton_Click" HorizontalAlignment="Right"/>
         </Menu>
 
         <!-- Левая панель с загруженными файлами -->
