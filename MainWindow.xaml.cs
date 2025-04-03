@@ -17,11 +17,9 @@ namespace STEP_JSON_Application_for_ASKON
         private double scale = 1.0; // Текущий масштаб
         private const double ScaleRate = 0.1; // Шаг изменения масштаба
 
-
         private List<string> loadedFilePaths = new List<string>();
         private Stack<string> undoStack = new Stack<string>();
         private string lastText = string.Empty;
-
 
         private JsonManager jsonManager = new JsonManager();
         private TreeManager treeManager = new TreeManager();
@@ -69,7 +67,6 @@ namespace STEP_JSON_Application_for_ASKON
         {
             string filePath = GetJsonFilePath();
 
-            
             if (!string.IsNullOrEmpty(filePath))
             {
                 ImportJsonFile(filePath);
@@ -91,7 +88,7 @@ namespace STEP_JSON_Application_for_ASKON
                 return openFileDialog.FileName;
             }
 
-            return null; 
+            return null;
         }
         private void ImportJsonFile(string filePath)
         {
@@ -208,7 +205,6 @@ namespace STEP_JSON_Application_for_ASKON
             return jsonContent;
         }
 
-
         private void TestValidButton_Click(object sender, RoutedEventArgs e)
         {
             string jsonContent = StepJsonTextBox.Text;
@@ -263,8 +259,6 @@ namespace STEP_JSON_Application_for_ASKON
             }
         }
 
-
-
         // UPDATE LISTBOX WHEN IMPORTING
         private void UpdateLoadedFilesList()
         {
@@ -278,7 +272,6 @@ namespace STEP_JSON_Application_for_ASKON
                 LoadedFilesListBox.Visibility = Visibility.Visible;
             }
         }
-
 
         // SELECTING FILES FROM UPLOADED TO LISTBOX
         private void LoadedFilesListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -295,7 +288,6 @@ namespace STEP_JSON_Application_for_ASKON
                     var jsonObject = JObject.Parse(fileContent);
                     var treeNodes = treeManager.FormatJsonObject(jsonObject);
 
-                    
                     TextTabTreeView.Items.Clear();
                     SchemaCanvas.Children.Clear();
                     foreach (var node in treeNodes)
@@ -306,24 +298,18 @@ namespace STEP_JSON_Application_for_ASKON
                     treeManager.ExpandAllTreeViewItems(TextTabTreeView);
                     schemaManager.GenerateSchema(jsonObject, SchemaCanvas);
                     DefaultFileNameTextBlock.Text = selectedFilePath;
-
                 }
             }
         }
 
         private void StepJsonTextBox_TextChanged(object sender, EventArgs e)
         {
-
             if (StepJsonTextBox.Text != lastText)
             {
                 undoStack.Push(lastText);
                 lastText = StepJsonTextBox.Text;
             }
         }
-
-
-
-
 
         // GETTING THE PATH OF THE DOWNLOADED FILE IN LITBOX
         private string GetSelectedFilePath(string selectedFileName)
@@ -374,15 +360,11 @@ namespace STEP_JSON_Application_for_ASKON
             }
         }
 
-
         // ПОИСК (НЕ РЕАЛИЗОВАН)
         private void TextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
 
         }
-
-
-
 
         // ВКЛАДКА В МЕНЮ = ФАЙЛ
         //============================================================================================================
@@ -411,7 +393,7 @@ namespace STEP_JSON_Application_for_ASKON
                     File.WriteAllText(filePath, json);
                     MessageBox.Show("JSON файл успешно создан!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
 
-                    ImportJsonFile(filePath); 
+                    ImportJsonFile(filePath);
                 }
                 catch (Exception ex)
                 {
@@ -420,7 +402,6 @@ namespace STEP_JSON_Application_for_ASKON
             }
         }
 
-       
         private void OpenFile_Click(object sender, RoutedEventArgs e)
         {
             ImportButton_Click(sender, e);
@@ -441,10 +422,6 @@ namespace STEP_JSON_Application_for_ASKON
             Application.Current.Shutdown();
         }
         //============================================================================================================
-
-
-
-
 
         // ВКЛАДКА В МЕНЮ = ПРАВКА
         //============================================================================================================
@@ -483,18 +460,14 @@ namespace STEP_JSON_Application_for_ASKON
 
         private void ReturnButton_Click(object sender, RoutedEventArgs e)
         {
-
             if (undoStack.Count > 1)
             {
-
                 StepJsonTextBox.TextChanged -= StepJsonTextBox_TextChanged;
 
                 undoStack.Pop();
                 StepJsonTextBox.Text = undoStack.Peek();
 
-
                 lastText = StepJsonTextBox.Text;
-
 
                 StepJsonTextBox.TextChanged += StepJsonTextBox_TextChanged;
             }
@@ -521,17 +494,13 @@ namespace STEP_JSON_Application_for_ASKON
         // ВКЛАДКА В МЕНЮ = CПРАВКА
         private void InformationMenuItem_Click(object sender, RoutedEventArgs e)
         {
-           
+            AboutWindow aboutWindow = new AboutWindow();
+            aboutWindow.Owner = this; // Устанавливаем главное окно как владельца
+            aboutWindow.ShowDialog(); // Открываем окно как модальное
         }
-
-        
 
         //============================================================================================================
     }
-
-
-
-
 
     // SOMETHING FOR WORKING WITH WOOD.....
     public class TreeNode
