@@ -4,33 +4,30 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media.Imaging;
 
 namespace STEP_JSON_Application_for_ASKON
 {
     public class TreeManager
     {
-        // Сохраняем старый метод для совместимости
-        public List<TreeNode> FormatJsonObject(JObject jsonObject)
-        {
-            return FormatJson(jsonObject);
-        }
+        public List<TreeNode> FormatJsonObject(JObject jsonObject) => FormatJson(jsonObject);
 
-        // Новый метод (основная реализация)
         public List<TreeNode> FormatJson(JObject json)
         {
             var rootNodes = new List<TreeNode>();
+            var rootNode = new TreeNode
+            {
+                Name = "=== ДАННЫЕ ===",
+                IsExpanded = true,
+                FontSize = 14
+            };
 
-            // Обработка корневого уровня
-            var rootNode = new TreeNode { Name = "=== ДАННЫЕ ===", IsExpanded = true };
-
-            // Если есть массив instances (как в исходном коде)
             if (json["instances"] != null)
             {
                 ProcessInstances(json["instances"] as JArray, rootNode);
             }
             else
             {
-                // Обработка обычного JSON
                 ProcessJObject(json, rootNode);
             }
 
@@ -46,12 +43,19 @@ namespace STEP_JSON_Application_for_ASKON
                 {
                     Name = $"ID: {instance["id"]}",
                     Value = $"Тип: {instance["type"]}",
-                    IsExpanded = true
+                    IsExpanded = true,
+                    FontSize = 14,
+                    Margin = new Thickness(10, 3, 0, 3)
                 };
 
                 if (instance["attributes"] is JObject attributes)
                 {
-                    var attrsNode = new TreeNode { Name = "Атрибуты", IsExpanded = true };
+                    var attrsNode = new TreeNode
+                    {
+                        Name = "Атрибуты",
+                        IsExpanded = true,
+                        FontSize = 14
+                    };
                     ProcessFilteredAttributes(attributes, attrsNode);
                     instanceNode.Children.Add(attrsNode);
                 }
@@ -62,16 +66,28 @@ namespace STEP_JSON_Application_for_ASKON
 
         private void ProcessFilteredAttributes(JObject attributes, TreeNode parentNode)
         {
-            // Список разрешенных атрибутов
             var allowedAttributes = new HashSet<string> { "id", "name", "description" };
 
             foreach (var property in attributes.Properties())
             {
-                // Пропускаем атрибуты, которых нет в списке разрешенных
                 if (!allowedAttributes.Contains(property.Name.ToLower()))
                     continue;
 
-                var node = new TreeNode { Name = property.Name };
+                var node = new TreeNode
+                {
+                    FontSize = 14,
+                    Margin = new Thickness(15, 2, 0, 2)
+                };
+
+                if (property.Name.ToLower() == "description")
+                {
+                    node.ImageSource = new BitmapImage(new Uri("pack://application:,,,/StaticFiles/description.png"));
+                    node.Name = string.Empty;
+                }
+                else
+                {
+                    node.Name = property.Name;
+                }
 
                 switch (property.Value.Type)
                 {
@@ -80,13 +96,11 @@ namespace STEP_JSON_Application_for_ASKON
                         node.IsExpanded = true;
                         ProcessJObject((JObject)property.Value, node);
                         break;
-
                     case JTokenType.Array:
                         node.Value = $"[{property.Value.Count()}]";
                         node.IsExpanded = true;
                         ProcessArray((JArray)property.Value, node);
                         break;
-
                     default:
                         node.Value = property.Value.ToString();
                         break;
@@ -100,7 +114,21 @@ namespace STEP_JSON_Application_for_ASKON
         {
             foreach (var property in jObject.Properties())
             {
-                var node = new TreeNode { Name = property.Name };
+                var node = new TreeNode
+                {
+                    FontSize = 14,
+                    Margin = new Thickness(15, 2, 0, 2)
+                };
+
+                if (property.Name.ToLower() == "description")
+                {
+                    node.ImageSource = new BitmapImage(new Uri("pack://application:,,,/StaticFiles/description.png"));
+                    node.Name = string.Empty;
+                }
+                else
+                {
+                    node.Name = property.Name;
+                }
 
                 switch (property.Value.Type)
                 {
@@ -109,13 +137,11 @@ namespace STEP_JSON_Application_for_ASKON
                         node.IsExpanded = true;
                         ProcessJObject((JObject)property.Value, node);
                         break;
-
                     case JTokenType.Array:
                         node.Value = $"[{property.Value.Count()}]";
                         node.IsExpanded = true;
                         ProcessArray((JArray)property.Value, node);
                         break;
-
                     default:
                         node.Value = property.Value.ToString();
                         break;
@@ -129,9 +155,14 @@ namespace STEP_JSON_Application_for_ASKON
         {
             for (int i = 0; i < array.Count; i++)
             {
-                var item = array[i];
-                var node = new TreeNode { Name = $"[{i}]" };
+                var node = new TreeNode
+                {
+                    Name = $"[{i}]",
+                    FontSize = 14,
+                    Margin = new Thickness(15, 2, 0, 2)
+                };
 
+                var item = array[i];
                 if (item is JObject obj)
                 {
                     node.Value = "{...}";
@@ -167,5 +198,16 @@ namespace STEP_JSON_Application_for_ASKON
                 }
             }
         }
+    }
+
+    public class TreeNode
+    {
+        public string Name { get; set; }
+        public string Value { get; set; }
+        public List<TreeNode> Children { get; set; } = new List<TreeNode>();
+        public bool IsExpanded { get; set; }
+        public BitmapImage ImageSource { get; set; }
+        public int FontSize { get; set; } = 12;
+        public Thickness Margin { get; set; } = new Thickness(5);
     }
 }

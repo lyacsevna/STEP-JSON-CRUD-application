@@ -2,10 +2,12 @@
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input; // Добавлено для Keyboard.Modifiers
 using System.Windows.Media; // Для ScaleTransform
 
@@ -503,11 +505,16 @@ namespace STEP_JSON_Application_for_ASKON
     }
 
     // SOMETHING FOR WORKING WITH WOOD.....
-    public class TreeNode
+    public class NullToVisibilityConverter : IValueConverter
     {
-        public string Name { get; set; }
-        public string Value { get; set; }
-        public List<TreeNode> Children { get; set; } = new List<TreeNode>();
-        public bool IsExpanded { get; set; }
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return value == null ? Visibility.Collapsed : Visibility.Visible;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

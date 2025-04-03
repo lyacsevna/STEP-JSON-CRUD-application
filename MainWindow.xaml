@@ -8,6 +8,13 @@
         mc:Ignorable="d"
         Title="Главное меню" Height="450" Width="800">
     <Window.Resources>
+        <local:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
+
+        <Style TargetType="TreeViewItem">
+            <Setter Property="FontSize" Value="{Binding FontSize}"/>
+            <Setter Property="FontWeight" Value="{Binding FontWeight}"/>
+            <Setter Property="Margin" Value="{Binding Margin}"/>
+        </Style>
         <!--СТИЛИ ДЛЯ КНОПОК ОБЫЧНЫЕ-->
         <Style TargetType="Button">
             <Setter Property="Margin" Value="5"/>
@@ -223,12 +230,15 @@
                        TextChanged="StepJsonTextBox_TextChanged"/>
                 </TabItem>
                 <TabItem Header="ТЕКСТ" x:Name="TextTab">
-                    <TreeView x:Name="TextTabTreeView" BorderThickness="0" Background="Transparent">
+                    <TreeView x:Name="TextTabTreeView">
                         <TreeView.ItemTemplate>
                             <HierarchicalDataTemplate ItemsSource="{Binding Children}">
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="{Binding Name}" />
-                                    <TextBlock Text="{Binding Value}" Margin="5,0,0,0" />
+                                    <Image Source="{Binding ImageSource}" 
+                       Width="20" Height="20" Margin="0,0,5,0"
+                       Visibility="{Binding ImageSource, Converter={StaticResource NullToVisibilityConverter}}"/>
+                                    <TextBlock Text="{Binding Name}" Margin="0,0,5,0"/>
+                                    <TextBlock Text="{Binding Value}"/>
                                 </StackPanel>
                             </HierarchicalDataTemplate>
                         </TreeView.ItemTemplate>
