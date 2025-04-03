@@ -113,7 +113,9 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Resource Include="StaticFiles\description.png" />
+  </ItemGroup>
   <ItemGroup>
     <Resource Include="StaticFiles\jsonLogoForMenu.png" />
   </ItemGroup>
