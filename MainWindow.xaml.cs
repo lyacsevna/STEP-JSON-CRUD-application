@@ -59,7 +59,7 @@ namespace STEP_JSON_Application_for_ASKON
                 transform.ScaleX = scale;
                 transform.ScaleY = scale;
 
-                e.Handled = true; // Предотвращаем дальнейшую обработку события
+                e.Handled = true;
             }
         }
 
