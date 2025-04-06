@@ -154,7 +154,7 @@ namespace STEP_JSON_Application_for_ASKON
             UpdateLoadedFilesList();
         }
 
-        private string AddErrorCommentsToJson(string jsonContent, out string errorDescription)
+        private string AddErrorCommentsToJson(string jsonContent, out string errorDescription) //сделать для множества ошибок
         {
             errorDescription = string.Empty;
             var errors = new List<string>();
@@ -170,7 +170,7 @@ namespace STEP_JSON_Application_for_ASKON
             }
             catch (JsonReaderException ex)
             {
-                errorDescription = $"Ошибка в JSON: {ex.Message}\nСтрока: {ex.LineNumber}, Позиция: {ex.LinePosition}";
+                errorDescription = $"Ошибка синтаксиса JSON: {ex.Message}\nСтрока: {ex.LineNumber}, Позиция: {ex.LinePosition}";
                 return jsonContent;
             }
 
