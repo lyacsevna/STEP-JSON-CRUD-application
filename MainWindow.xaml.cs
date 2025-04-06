@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -15,6 +14,9 @@ namespace STEP_JSON_Application_for_ASKON
 {
     public partial class MainWindow : Window
     {
+
+        #region Поля
+
         private string currentFilePath = string.Empty;
         private double scale = 1.0; // Текущий масштаб
         private const double ScaleRate = 0.1; // Шаг изменения масштаба
@@ -25,10 +27,12 @@ namespace STEP_JSON_Application_for_ASKON
         private string lastText = string.Empty;
 
         private static readonly JsonManager jsonManager = new JsonManager();
-        private static readonly TreeManager treeManager1 = new TreeManager();
-        private static readonly TreeManager treeManager = treeManager1;
+        private static readonly TreeManager treeManager = new TreeManager();
         private static readonly SchemaManager schemaManager = new SchemaManager();
 
+        #endregion
+
+        #region Конструктор
         public MainWindow()
         {
             InitializeComponent();
@@ -40,8 +44,9 @@ namespace STEP_JSON_Application_for_ASKON
             SchemaCanvas.RenderTransform = new ScaleTransform(scale, scale);
         }
 
-        // Обработчик масштабирования
-        //============================================================================================================
+        #endregion
+
+        #region Обработчики событий
         private void SchemaCanvas_MouseWheel(object sender, MouseWheelEventArgs e)
         {
             if (Keyboard.Modifiers == ModifierKeys.Control) // Проверяем, нажат ли Ctrl
@@ -65,8 +70,6 @@ namespace STEP_JSON_Application_for_ASKON
             }
         }
 
-        //============================================================================================================
-
         private void ImportButton_Click(object sender, RoutedEventArgs e)
         {
             string filePath = GetJsonFilePath();
@@ -80,6 +83,11 @@ namespace STEP_JSON_Application_for_ASKON
                 MessageBox.Show("Файл не был выбран.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
+
+
+        #endregion
+
+        #region Методы работы с файлами
         private string GetJsonFilePath()
         {
             Microsoft.Win32.OpenFileDialog openFileDialog = new Microsoft.Win32.OpenFileDialog
@@ -92,6 +100,53 @@ namespace STEP_JSON_Application_for_ASKON
                 return openFileDialog.FileName;
             }
 
+            return null;
+        }
+        private void SaveFile(string action)
+        {
+            Microsoft.Win32.SaveFileDialog saveFileDialog = new Microsoft.Win32.SaveFileDialog
+            {
+                Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*"
+            };
+
+            if (action == "Сохранить")
+            {
+                if (!string.IsNullOrEmpty(currentFilePath))
+                {
+                    File.WriteAllText(currentFilePath, StepJsonTextBox.Text);
+                    MessageBox.Show("Файл успешно сохранен.", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                else
+                {
+                    MessageBox.Show("Сначала используйте 'Сохранить как' для выбора пути.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+            }
+            else if (action == "Сохранить как")
+            {
+                if (saveFileDialog.ShowDialog() == true)
+                {
+                    string filePath = saveFileDialog.FileName;
+                    File.WriteAllText(filePath, StepJsonTextBox.Text);
+                    currentFilePath = filePath;
+
+                    MessageBox.Show("Файл успешно сохранен.", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+        }
+        private string GetSelectedFilePath(string selectedFileName)
+        {
+            try
+            {
+                int index = LoadedFilesListBox.Items.IndexOf(selectedFileName);
+                if (index >= 0 && index < loadedFilePaths.Count)
+                {
+                    return loadedFilePaths[index];
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при получении пути к файлу: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
             return null;
         }
         private void ImportJsonFile(string filePath)
@@ -154,7 +209,22 @@ namespace STEP_JSON_Application_for_ASKON
             DefaultFileNameTextBlock.Text = filePath;
             UpdateLoadedFilesList();
         }
+        private void UpdateLoadedFilesList()
+        {
+            if (LoadedFilesListBox.Items.Count == 0)
+            {
+                EmptyFilesMessage.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                EmptyFilesMessage.Visibility = Visibility.Collapsed;
+                LoadedFilesListBox.Visibility = Visibility.Visible;
+            }
+        }
 
+        #endregion
+
+        #region Вспомогательные методы
         private string AddErrorCommentsToJson(string jsonContent, out string errorDescription) //сделать для множества ошибок
         {
             errorDescription = string.Empty;
@@ -261,21 +331,6 @@ namespace STEP_JSON_Application_for_ASKON
             }
         }
 
-        // UPDATE LISTBOX WHEN IMPORTING
-        private void UpdateLoadedFilesList()
-        {
-            if (LoadedFilesListBox.Items.Count == 0)
-            {
-                EmptyFilesMessage.Visibility = Visibility.Visible;
-            }
-            else
-            {
-                EmptyFilesMessage.Visibility = Visibility.Collapsed;
-                LoadedFilesListBox.Visibility = Visibility.Visible;
-            }
-        }
-
-        // SELECTING FILES FROM UPLOADED TO LISTBOX
         private void LoadedFilesListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (LoadedFilesListBox.SelectedItem is string selectedFileName)
@@ -313,65 +368,13 @@ namespace STEP_JSON_Application_for_ASKON
             }
         }
 
-        // GETTING THE PATH OF THE DOWNLOADED FILE IN LITBOX
-        private string GetSelectedFilePath(string selectedFileName)
-        {
-            try
-            {
-                int index = LoadedFilesListBox.Items.IndexOf(selectedFileName);
-                if (index >= 0 && index < loadedFilePaths.Count)
-                {
-                    return loadedFilePaths[index];
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Ошибка при получении пути к файлу: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-            return null;
-        }
-
-        // SAVING A FILE WHEN EDITING
-        private void SaveFile(string action)
-        {
-            Microsoft.Win32.SaveFileDialog saveFileDialog = new Microsoft.Win32.SaveFileDialog
-            {
-                Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*"
-            };
-
-            if (action == "Сохранить")
-            {
-                if (!string.IsNullOrEmpty(currentFilePath))
-                {
-                    File.WriteAllText(currentFilePath, StepJsonTextBox.Text);
-                    MessageBox.Show("Файл успешно сохранен.", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-                else
-                {
-                    MessageBox.Show("Сначала используйте 'Сохранить как' для выбора пути.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
-                }
-            }
-            else if (action == "Сохранить как")
-            {
-                if (saveFileDialog.ShowDialog() == true)
-                {
-                    string filePath = saveFileDialog.FileName;
-                    File.WriteAllText(filePath, StepJsonTextBox.Text);
-                    currentFilePath = filePath;
-
-                    MessageBox.Show("Файл успешно сохранен.", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-            }
-        }
-
-        // ПОИСК (НЕ РЕАЛИЗОВАН)
-        private void TextBox_TextChanged(object sender, TextChangedEventArgs e)
+        private void TextBox_TextChanged(object sender, TextChangedEventArgs e) //РЕАЛИЗОВАТЬ
         {
 
         }
+        #endregion
 
-        // ВКЛАДКА В МЕНЮ = ФАЙЛ
-        //============================================================================================================
+        #region Вкладка в меню - ФАЙЛ (создать, открыть и т.д)
         private void CreateNewFile_Click(object sender, RoutedEventArgs e)
         {
             Microsoft.Win32.SaveFileDialog saveFileDialog = new Microsoft.Win32.SaveFileDialog
@@ -425,10 +428,10 @@ namespace STEP_JSON_Application_for_ASKON
         {
             Application.Current.Shutdown();
         }
-        //============================================================================================================
 
-        // ВКЛАДКА В МЕНЮ = ПРАВКА
-        //============================================================================================================
+        #endregion
+
+        #region Вкладка в меню - ПРАВКА (редактирование файла)
         private void CutButton_Click(object sender, RoutedEventArgs e)
         {
             if (StepJsonTextBox != null)
@@ -481,19 +484,19 @@ namespace STEP_JSON_Application_for_ASKON
             StepJsonTextBox?.SelectAll();
         }
 
-        //============================================================================================================
+        #endregion
 
-        // ВКЛАДКА В МЕНЮ = CПРАВКА
+        #region  Вкладка в меню - СПРАВКА 
         private void InformationMenuItem_Click(object sender, RoutedEventArgs e)
         {
             AboutWindow aboutWindow = new AboutWindow(); // Устанавливаем главное окно как владельца
             aboutWindow.ShowDialog(); // Открываем окно как модальное
         }
 
-        //============================================================================================================
+        #endregion
     }
 
-    // SOMETHING FOR WORKING WITH WOOD.....
+    
     public class NullToVisibilityConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)

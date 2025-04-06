@@ -227,7 +227,7 @@
 
             </TabControl>
             
-            <StackPanel x:Name="ErrorPanel" Visibility="Collapsed">
+            <StackPanel x:Name="ErrorPanel" Visibility="Collapsed" Grid.Row="1">
 
                 <Label Content="Список ошибок"/>
                 
