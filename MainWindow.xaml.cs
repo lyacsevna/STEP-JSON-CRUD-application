@@ -20,12 +20,14 @@ namespace STEP_JSON_Application_for_ASKON
         private const double ScaleRate = 0.1; // Шаг изменения масштаба
 
         private List<string> loadedFilePaths = new List<string>();
-        private Stack<string> undoStack = new Stack<string>();
+        private static readonly Stack<string> stack = new Stack<string>();
+        private Stack<string> undoStack = stack;
         private string lastText = string.Empty;
 
-        private JsonManager jsonManager = new JsonManager();
-        private TreeManager treeManager = new TreeManager();
-        private SchemaManager schemaManager = new SchemaManager();
+        private static readonly JsonManager jsonManager = new JsonManager();
+        private static readonly TreeManager treeManager1 = new TreeManager();
+        private static readonly TreeManager treeManager = treeManager1;
+        private static readonly SchemaManager schemaManager = new SchemaManager();
 
         public MainWindow()
         {
@@ -106,8 +108,7 @@ namespace STEP_JSON_Application_for_ASKON
                 return;
             }
 
-            string errorDescription;
-            string processedContent = AddErrorCommentsToJson(fileContent, out errorDescription);
+            string processedContent = AddErrorCommentsToJson(fileContent, out string errorDescription);
 
             SelectFileTextBlock.Visibility = Visibility.Collapsed;
             StepJsonTextBox.Text = processedContent;
@@ -115,11 +116,11 @@ namespace STEP_JSON_Application_for_ASKON
             if (!string.IsNullOrEmpty(errorDescription))
             {
                 ErrorJSONTextBox.Text = errorDescription;
-                ErrorJSONTextBox.Visibility = Visibility.Visible;
+                ErrorPanel.Visibility = Visibility.Visible;
             }
             else
             {
-                ErrorJSONTextBox.Visibility = Visibility.Collapsed;
+                ErrorPanel.Visibility = Visibility.Collapsed;
             }
 
             try
@@ -212,8 +213,7 @@ namespace STEP_JSON_Application_for_ASKON
             string jsonContent = StepJsonTextBox.Text;
 
             // Проверяем синтаксис JSON и получаем возможные ошибки
-            string errorDescription;
-            string processedContent = AddErrorCommentsToJson(jsonContent, out errorDescription);
+            string processedContent = AddErrorCommentsToJson(jsonContent, out string errorDescription);
 
             // Обновляем интерфейс в зависимости от наличия ошибок
             if (!string.IsNullOrEmpty(errorDescription))
@@ -334,8 +334,10 @@ namespace STEP_JSON_Application_for_ASKON
         // SAVING A FILE WHEN EDITING
         private void SaveFile(string action)
         {
-            Microsoft.Win32.SaveFileDialog saveFileDialog = new Microsoft.Win32.SaveFileDialog();
-            saveFileDialog.Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*";
+            Microsoft.Win32.SaveFileDialog saveFileDialog = new Microsoft.Win32.SaveFileDialog
+            {
+                Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*"
+            };
 
             if (action == "Сохранить")
             {
@@ -438,26 +440,17 @@ namespace STEP_JSON_Application_for_ASKON
 
         private void CopyButton_Click(object sender, RoutedEventArgs e)
         {
-            if (StepJsonTextBox != null)
-            {
-                StepJsonTextBox.Copy();
-            }
+            StepJsonTextBox?.Copy();
         }
 
         private void PasteButton_Click(object sender, RoutedEventArgs e)
         {
-            if (StepJsonTextBox != null)
-            {
-                StepJsonTextBox.Paste();
-            }
+            StepJsonTextBox?.Paste();
         }
 
         private void CancelButton_Click(object sender, RoutedEventArgs e)
         {
-            if (StepJsonTextBox != null)
-            {
-                StepJsonTextBox.Undo();
-            }
+            StepJsonTextBox?.Undo();
         }
 
         private void ReturnButton_Click(object sender, RoutedEventArgs e)
@@ -485,10 +478,7 @@ namespace STEP_JSON_Application_for_ASKON
 
         private void SelectAllButton_Click(object sender, RoutedEventArgs e)
         {
-            if (StepJsonTextBox != null)
-            {
-                StepJsonTextBox.SelectAll();
-            }
+            StepJsonTextBox?.SelectAll();
         }
 
         //============================================================================================================
@@ -496,8 +486,7 @@ namespace STEP_JSON_Application_for_ASKON
         // ВКЛАДКА В МЕНЮ = CПРАВКА
         private void InformationMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            AboutWindow aboutWindow = new AboutWindow();
-            aboutWindow.Owner = this; // Устанавливаем главное окно как владельца
+            AboutWindow aboutWindow = new AboutWindow(); // Устанавливаем главное окно как владельца
             aboutWindow.ShowDialog(); // Открываем окно как модальное
         }
 

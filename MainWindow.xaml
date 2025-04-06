@@ -15,6 +15,8 @@
             <Setter Property="FontWeight" Value="{Binding FontWeight}"/>
             <Setter Property="Margin" Value="{Binding Margin}"/>
         </Style>
+        
+        
         <!--СТИЛИ ДЛЯ КНОПОК ОБЫЧНЫЕ-->
         <Style TargetType="Button">
             <Setter Property="Margin" Value="5"/>
@@ -35,26 +37,6 @@
             </Setter>
         </Style>
         
-        <!--СТИЛИ ДЛЯ КНОПКИ ПЕРЕКЛЮЧЕНИЯ РЕЖИМОВ РЕДАКТИРОВАНИЯ И ПРОСМОТРА-->
-        <Style x:Key="ToggleButtonStyle" TargetType="ToggleButton">
-            <Setter Property="FontSize" Value="11"/>
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderBrush" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="1"/>
-
-            <Style.Triggers>
-                <Trigger Property="IsChecked" Value="True">
-                    <Setter Property="Background" Value="#009688"/>
-                    <Setter Property="Foreground" Value="White"/>
-                </Trigger>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#00796B"/>
-                    <Setter Property="Foreground" Value="White"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-
         <!--ПОИСК-->
         <Style x:Key="SearchTextBoxStyle" TargetType="TextBox">
             <Setter Property="Template">
@@ -113,23 +95,9 @@
             
             <!--сепаратор вертикальный-->
             <Rectangle VerticalAlignment="Stretch" Grid.Column="1" Width="1" Margin="2" Stroke="White" />
-            
-            
+
+
             <TextBlock Text="JSON VIEWER" Grid.Column="2" VerticalAlignment="Center" Margin="15,0" Foreground="White" FontSize="16"/>
-
-            
-            <!--<ToggleButton x:Name="ViewButton" Grid.Column="3" 
-                  Style="{StaticResource ToggleButtonStyle}" 
-                  Content="ПРОСМОТР" 
-                  VerticalAlignment="Stretch"
-                  Checked="ViewButton_Checked"/>
-
-            <ToggleButton x:Name="EditorButton" Grid.Column="4" 
-                  HorizontalAlignment="Stretch" 
-                  Style="{StaticResource ToggleButtonStyle}" 
-                  Content="РЕДАКТОР" 
-                  VerticalAlignment="Stretch"
-                  Checked="EditorButton_Checked"/>-->
 
             <TextBox Style="{StaticResource SearchTextBoxStyle}" 
              Width="Auto" 
@@ -215,13 +183,16 @@
 
         <!-- Основная панель с вкладками -->
         <Grid Grid.Column="1" Grid.Row="2" Margin="10" x:Name="MainGrid">
+            
             <Grid.RowDefinitions>
                 <RowDefinition Height="*" />
-                <!-- Первая строка занимает оставшееся пространство -->
                 <RowDefinition Height="Auto" />
-                <!-- Вторая строка с автоматической высотой -->
             </Grid.RowDefinitions>
+            
+            
             <TabControl x:Name="MainTabControl" Grid.Row="0">
+                
+                
                 <TabItem Header="STEP-JSON" x:Name="StepJsonTab">
                     <avalonEdit:TextEditor x:Name="StepJsonTextBox" 
                        SyntaxHighlighting="Json"
@@ -229,14 +200,16 @@
                        VerticalScrollBarVisibility="Auto" 
                        TextChanged="StepJsonTextBox_TextChanged"/>
                 </TabItem>
+                
+                
                 <TabItem Header="ТЕКСТ" x:Name="TextTab">
-                    <TreeView x:Name="TextTabTreeView">
+                    <TreeView x:Name="TextTabTreeView" BorderThickness="0">
                         <TreeView.ItemTemplate>
                             <HierarchicalDataTemplate ItemsSource="{Binding Children}">
                                 <StackPanel Orientation="Horizontal">
                                     <Image Source="{Binding ImageSource}" 
-                       Width="20" Height="20" Margin="0,0,5,0"
-                       Visibility="{Binding ImageSource, Converter={StaticResource NullToVisibilityConverter}}"/>
+                                           Width="20" Height="20" Margin="0,0,5,0"
+                                           Visibility="{Binding ImageSource, Converter={StaticResource NullToVisibilityConverter}}"/>
                                     <TextBlock Text="{Binding Name}" Margin="0,0,5,0"/>
                                     <TextBlock Text="{Binding Value}"/>
                                 </StackPanel>
@@ -244,15 +217,21 @@
                         </TreeView.ItemTemplate>
                     </TreeView>
                 </TabItem>
+                
+                
                 <TabItem Header="СХЕМА" x:Name="SchemaTab">
                     <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
                         <Canvas x:Name="SchemaCanvas" Background="White" Width="800" Height="800"/>
                     </ScrollViewer>
                 </TabItem>
+                
             </TabControl>
-            <TextBlock x:Name="ErrorJSONTextBox" 
+            <StackPanel x:Name="ErrorPanel" Visibility="Collapsed" Grid.Row="1">
+                <Label Content="Список ошибок"/>
+                <TextBlock x:Name="ErrorJSONTextBox" 
                        VerticalAlignment="Bottom" 
-                       Visibility="Collapsed" Grid.Row="1"/>
+                        />
+            </StackPanel>
 
             <TextBlock Text="Выберите файл" HorizontalAlignment="Center" VerticalAlignment="Center" x:Name="SelectFileTextBlock" Visibility="Visible"/>
             <TextBlock Visibility="Collapsed" Text="0 ошибок" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="10" x:Name="ErrorCountTextBlock"/>
