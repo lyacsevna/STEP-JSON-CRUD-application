@@ -1,12 +1,14 @@
 ﻿<Window x:Class="STEP_JSON_Application_for_ASKON.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:avalonEdit="http://icsharpcode.net/sharpdevelop/avalonedit"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:STEP_JSON_Application_for_ASKON"
         mc:Ignorable="d"
         Title="Главное меню" Height="450" Width="800">
+
+
     <Window.Resources>
         <local:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
 
@@ -15,8 +17,8 @@
             <Setter Property="FontWeight" Value="{Binding FontWeight}"/>
             <Setter Property="Margin" Value="{Binding Margin}"/>
         </Style>
-        
-        
+
+
         <!--СТИЛИ ДЛЯ КНОПОК ОБЫЧНЫЕ-->
         <Style TargetType="Button">
             <Setter Property="Margin" Value="5"/>
@@ -36,7 +38,7 @@
                 </Setter.Value>
             </Setter>
         </Style>
-        
+
         <!--ПОИСК-->
         <Style x:Key="SearchTextBoxStyle" TargetType="TextBox">
             <Setter Property="Template">
@@ -61,11 +63,9 @@
         </Style>
     </Window.Resources>
 
-   
+
     <Grid>
-        
-        
-        <!--Общие настройки основного грида-->
+        <!--Общие настройки основной разметки-->
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="4*"/>
@@ -78,7 +78,7 @@
         </Grid.RowDefinitions>
 
         <!--Грид для элементов верхней панели (зеленый фон)-->
-        <Grid Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Background="#00796B"> 
+        <Grid Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Background="#00796B">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
@@ -92,7 +92,7 @@
             <Image Source="StaticFiles/jsonLogoForMenu.png"
                    Grid.Column="0"
                    VerticalAlignment="Center" Height="40"/>
-            
+
             <!--сепаратор вертикальный-->
             <Rectangle VerticalAlignment="Stretch" Grid.Column="1" Width="1" Margin="2" Stroke="White" />
 
@@ -110,13 +110,13 @@
                        Grid.Column="6" VerticalAlignment="Center" 
                        Margin="5,0" Foreground="White"
                        HorizontalAlignment="Right"/>
-        
+
         </Grid>
 
         <!-- Меню -->
         <Menu x:Name="Menu" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" VerticalAlignment="Top" Background="#E0EFED" Padding="5">
-           
-            
+
+
             <MenuItem Header="Файл">
                 <MenuItem Header="Создать" InputGestureText="Ctrl + N" Click="CreateNewFile_Click"/>
                 <MenuItem Header="Открыть" InputGestureText="Ctrl + O" Click="OpenFile_Click"/>
@@ -125,9 +125,9 @@
                 <Separator/>
                 <MenuItem Header="Выход" Click="Exit_Click"/>
             </MenuItem>
-            
-            
-            
+
+
+
             <MenuItem Header="Правка">
 
                 <MenuItem Header="Вырезать" InputGestureText="Ctrl + X" Click="CutButton_Click"/>
@@ -183,16 +183,16 @@
 
         <!-- Основная панель с вкладками -->
         <Grid Grid.Column="1" Grid.Row="2" Margin="10" x:Name="MainGrid">
-            
+
             <Grid.RowDefinitions>
                 <RowDefinition Height="*" />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
-            
-            
+
+
             <TabControl x:Name="MainTabControl" Grid.Row="0">
-                
-                
+
+
                 <TabItem Header="STEP-JSON" x:Name="StepJsonTab">
                     <avalonEdit:TextEditor x:Name="StepJsonTextBox" 
                        SyntaxHighlighting="Json"
@@ -200,8 +200,8 @@
                        VerticalScrollBarVisibility="Auto" 
                        TextChanged="StepJsonTextBox_TextChanged"/>
                 </TabItem>
-                
-                
+
+
                 <TabItem Header="ТЕКСТ" x:Name="TextTab">
                     <TreeView x:Name="TextTabTreeView" BorderThickness="0">
                         <TreeView.ItemTemplate>
@@ -217,24 +217,33 @@
                         </TreeView.ItemTemplate>
                     </TreeView>
                 </TabItem>
-                
-                
+
+
                 <TabItem Header="СХЕМА" x:Name="SchemaTab">
                     <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
                         <Canvas x:Name="SchemaCanvas" Background="White" Width="800" Height="800"/>
                     </ScrollViewer>
                 </TabItem>
-                
+
             </TabControl>
-            <StackPanel x:Name="ErrorPanel" Visibility="Collapsed" Grid.Row="1">
+            
+            <StackPanel x:Name="ErrorPanel" Visibility="Collapsed">
+
                 <Label Content="Список ошибок"/>
+                
                 <TextBlock x:Name="ErrorJSONTextBox" 
-                       VerticalAlignment="Bottom" 
-                        />
+                       VerticalAlignment="Bottom" />
+                
             </StackPanel>
 
-            <TextBlock Text="Выберите файл" HorizontalAlignment="Center" VerticalAlignment="Center" x:Name="SelectFileTextBlock" Visibility="Visible"/>
-            <TextBlock Visibility="Collapsed" Text="0 ошибок" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="10" x:Name="ErrorCountTextBlock"/>
+            <TextBlock x:Name="SelectFileTextBlock" Text="Выберите файл" 
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"  Visibility="Visible"/>
+            
+            <TextBlock  x:Name="ErrorCountTextBlock" 
+                        Visibility="Collapsed" Text="0 ошибок" 
+                        HorizontalAlignment="Right" 
+                        VerticalAlignment="Bottom" Margin="10"/>
         </Grid>
 
     </Grid>
