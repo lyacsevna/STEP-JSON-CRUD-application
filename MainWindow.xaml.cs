@@ -51,8 +51,7 @@ namespace STEP_JSON_Application_for_ASKON
         {
             if (Keyboard.Modifiers == ModifierKeys.Control) // Проверяем, нажат ли Ctrl
             {
-                var transform = SchemaCanvas.RenderTransform as ScaleTransform;
-                if (transform == null) return;
+                if (!(SchemaCanvas.RenderTransform is ScaleTransform transform)) return;
 
                 // Увеличиваем или уменьшаем масштаб в зависимости от направления прокрутки
                 if (e.Delta > 0)
@@ -368,7 +367,7 @@ namespace STEP_JSON_Application_for_ASKON
             }
         }
 
-        private void TextBox_TextChanged(object sender, TextChangedEventArgs e) //РЕАЛИЗОВАТЬ
+        private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e) //РЕАЛИЗОВАТЬ
         {
 
         }
@@ -387,11 +386,102 @@ namespace STEP_JSON_Application_for_ASKON
             {
                 string filePath = saveFileDialog.FileName;
 
+                // Минимальный шаблон JSON
                 var data = new
                 {
-                    Name = "Пример",
-                    DateCreated = DateTime.Now,
-                    Content = "Это пример содержимого JSON файла."
+                    format = "ESKD_JSON_V1",
+                    schema = "GOST_R_2_525",
+                    instances = new List<object>
+            {
+                new
+                {
+                    id = "#1",
+                    type = "eskd_product",
+                    attributes = new
+                    {
+                        id = "АБВГ.XXXXXX.XXX",
+                        name = "Название продукта",
+                        description = "Описание продукта",
+                        frame_of_reference = "#33",
+                        product_type = ".ASSEMBLY."
+                    }
+                },
+                new
+                {
+                    id = "#2",
+                    type = "eskd_product_definition_formation",
+                    attributes = new
+                    {
+                        id = "001",
+                        description = "",
+                        of_product = "#1",
+                        make_or_buy = ".MADE.",
+                        standard = ".F."
+                    }
+                },
+                new
+                {
+                    id = "#3",
+                    type = "product_definition",
+                    attributes = new
+                    {
+                        id = "EPS001",
+                        description = "Описание для формирования ЭСК по ГОСТ Р 2.525",
+                        formation = "#2",
+                        frame_of_reference = "#37"
+                    }
+                },
+                new
+                {
+                    id = "#31",
+                    type = "document",
+                    attributes = new
+                    {
+                        id = "АБВГ.XXXXXX.XXXЭМС",
+                        name = "Название документа",
+                        kind = "#32"
+                    }
+                },
+                new
+                {
+                    id = "#32",
+                    type = "document_type",
+                    attributes = new
+                    {
+                        product_data_type = "ЭМСЕ"
+                    }
+                },
+                new
+                {
+                    id = "#41",
+                    type = "organization",
+                    attributes = new
+                    {
+                        id = "ЕКУЦ",
+                        name = "АО «Организация002»"
+                    }
+                },
+                new
+                {
+                    id = "#42",
+                    type = "eskd_organization_product_assignment",
+                    attributes = new
+                    {
+                        assigned_product = "#1",
+                        assigned_organization = "#41",
+                        role = "#43"
+                    }
+                },
+                new
+                {
+                    id = "#43",
+                    type = "organization_role",
+                    attributes = new
+                    {
+                        name = "Разработчик"
+                    }
+                }
+            }
                 };
 
                 try
@@ -489,14 +579,14 @@ namespace STEP_JSON_Application_for_ASKON
         #region  Вкладка в меню - СПРАВКА 
         private void InformationMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            AboutWindow aboutWindow = new AboutWindow(); // Устанавливаем главное окно как владельца
-            aboutWindow.ShowDialog(); // Открываем окно как модальное
+            AboutWindow aboutWindow = new AboutWindow();
+            aboutWindow.ShowDialog();
         }
 
         #endregion
     }
 
-    
+    #region Для дерева
     public class NullToVisibilityConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
@@ -509,4 +599,5 @@ namespace STEP_JSON_Application_for_ASKON
             throw new NotImplementedException();
         }
     }
+    #endregion
 }

@@ -99,11 +99,11 @@
 
             <TextBlock Text="JSON VIEWER" Grid.Column="2" VerticalAlignment="Center" Margin="15,0" Foreground="White" FontSize="16"/>
 
-            <TextBox Style="{StaticResource SearchTextBoxStyle}" 
+            <TextBox x:Name="SearchTextBox" Style="{StaticResource SearchTextBoxStyle}" 
              Width="Auto" 
              Grid.Column="5" 
              VerticalAlignment="Center" 
-             TextChanged="TextBox_TextChanged" 
+             TextChanged="SearchTextBox_TextChanged" 
              Text="    ПОИСК"/>
 
             <TextBlock x:Name="DefaultFileNameTextBlock"
