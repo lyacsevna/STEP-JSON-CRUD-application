@@ -150,6 +150,12 @@ namespace STEP_JSON_Application_for_ASKON
         }
         private void ImportJsonFile(string filePath)
         {
+            if (loadedFilePaths.Contains(filePath))
+            {
+                MessageBox.Show("Этот файл уже был загружен.", "Предупреждение", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             string fileContent;
 
             try
