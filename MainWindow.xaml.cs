@@ -312,6 +312,7 @@ namespace STEP_JSON_Application_for_ASKON
                     // Очищаем предыдущие элементы
                     TextTabTreeView.Items.Clear();
                     SchemaCanvas.Children.Clear();
+                    ErrorPanel.Visibility = Visibility.Collapsed;
 
                     // Добавляем новые элементы в TreeView
                     foreach (var node in treeNodes)

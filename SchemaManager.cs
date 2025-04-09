@@ -2,9 +2,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows;
 using System.Windows.Shapes;
 
 namespace STEP_JSON_Application_for_ASKON
@@ -18,6 +19,17 @@ namespace STEP_JSON_Application_for_ASKON
 
         public void GenerateSchema(JObject jsonObject, Canvas schemaCanvas)
         {
+            // Очищаем холст перед генерацией новой схемы
+            schemaCanvas.Children.Clear();
+
+            // Создаем группу трансформаций для перемещения и масштабирования
+            TransformGroup transformGroup = new TransformGroup();
+            TranslateTransform translateTransform = new TranslateTransform(0, 0);
+            ScaleTransform scaleTransform = new ScaleTransform(1, 1);
+            transformGroup.Children.Add(scaleTransform);
+            transformGroup.Children.Add(translateTransform);
+            schemaCanvas.RenderTransform = transformGroup;
+
             if (jsonObject == null || jsonObject["instances"] == null)
             {
                 MessageBox.Show("В JSON отсутствует массив 'instances'.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -55,7 +67,7 @@ namespace STEP_JSON_Application_for_ASKON
                             string label;
                             if (string.IsNullOrEmpty(refDesignator) && string.IsNullOrEmpty(quantityLabel))
                             {
-                                label = "Состоит из,\nкол-во неизвестно"; // Улучшенная подпись при отсутствии данных
+                                label = "Состоит из,\nкол-во неизвестно";
                             }
                             else if (string.IsNullOrEmpty(refDesignator))
                             {
@@ -195,6 +207,81 @@ namespace STEP_JSON_Application_for_ASKON
                     schemaCanvas.Children.Add(labelText);
                 }
             }
+
+            // Добавляем обработчики событий для плавного перемещения по холсту
+            Point lastMousePosition = new Point();
+            bool isDragging = false;
+
+            schemaCanvas.MouseLeftButtonDown += (sender, e) =>
+            {
+                schemaCanvas.Cursor = Cursors.Hand;
+                lastMousePosition = e.GetPosition(schemaCanvas);
+                isDragging = true;
+                schemaCanvas.CaptureMouse();
+                CompositionTarget.Rendering += UpdateCanvasPosition;
+            };
+
+            void UpdateCanvasPosition(object sender, EventArgs e)
+            {
+                if (isDragging)
+                {
+                    Point currentPosition = Mouse.GetPosition(schemaCanvas);
+                    Vector delta = currentPosition - lastMousePosition;
+                    lastMousePosition = currentPosition;
+
+                    // Свободное перемещение без ограничений
+                    translateTransform.X += delta.X;
+                    translateTransform.Y += delta.Y;
+                }
+            }
+
+            schemaCanvas.MouseLeftButtonUp += (sender, e) =>
+            {
+                schemaCanvas.Cursor = Cursors.Arrow;
+                isDragging = false;
+                schemaCanvas.ReleaseMouseCapture();
+                CompositionTarget.Rendering -= UpdateCanvasPosition;
+            };
+
+            schemaCanvas.MouseLeave += (sender, e) =>
+            {
+                if (isDragging)
+                {
+                    schemaCanvas.Cursor = Cursors.Arrow;
+                    isDragging = false;
+                    schemaCanvas.ReleaseMouseCapture();
+                    CompositionTarget.Rendering -= UpdateCanvasPosition;
+                }
+            };
+
+            // Добавляем обработчик для масштабирования с помощью CTRL + колесико мыши
+            schemaCanvas.MouseWheel += (sender, e) =>
+            {
+                if (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
+                {
+                    double scaleFactor = e.Delta > 0 ? 1.1 : 0.9;
+                    double newScaleX = scaleTransform.ScaleX * scaleFactor;
+                    double newScaleY = scaleTransform.ScaleY * scaleFactor;
+
+                    // Вычисляем минимальный масштаб, при котором схема помещается в видимую область
+                    double viewWidth = schemaCanvas.ActualWidth;
+                    double viewHeight = schemaCanvas.ActualHeight;
+                    double minScaleX = viewWidth / schemaCanvas.Width;
+                    double minScaleY = viewHeight / schemaCanvas.Height;
+                    double minScale = Math.Max(minScaleX, minScaleY);
+
+                    // Ограничиваем масштаб: минимум - чтобы схема помещалась, максимум - 5
+                    if (newScaleX >= minScale && newScaleX <= 5)
+                    {
+                        Point mousePosition = e.GetPosition(schemaCanvas);
+                        scaleTransform.CenterX = mousePosition.X;
+                        scaleTransform.CenterY = mousePosition.Y;
+                        scaleTransform.ScaleX = newScaleX;
+                        scaleTransform.ScaleY = newScaleY;
+                    }
+                    e.Handled = true;
+                }
+            };
         }
 
         private string GetQuantityLabel(string quantityId, List<JObject> instances)

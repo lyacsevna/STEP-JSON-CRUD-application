@@ -119,7 +119,7 @@
 
             <MenuItem Header="Файл">
                 <MenuItem Header="Создать" InputGestureText="Ctrl + N" Click="CreateNewFile_Click"/>
-                <MenuItem Header="Открыть" InputGestureText="Ctrl + O" Click="OpenFile_Click"/>
+                <MenuItem Header="Открыть" InputGestureText="Ctrl + O" Click="ImportButton_Click"/>
                 <MenuItem Header="Сохранить" InputGestureText="Ctrl + S" Click="SaveFile_Click"/>
                 <MenuItem Header="Сохранить как" InputGestureText="Ctrl + Shift + S" Click="SaveAsFile_Click"/>
                 <Separator/>
