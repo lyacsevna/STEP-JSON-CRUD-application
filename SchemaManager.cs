@@ -17,18 +17,21 @@ namespace STEP_JSON_Application_for_ASKON
         private readonly double VerticalSpacing = 100;
         private readonly double HorizontalSpacing = 120;
 
-        public void GenerateSchema(JObject jsonObject, Canvas schemaCanvas)
+        public void GenerateSchema(JObject jsonObject, Canvas schemaCanvas, ScrollViewer scrollViewer)
         {
             // Очищаем холст перед генерацией новой схемы
             schemaCanvas.Children.Clear();
 
-            // Создаем группу трансформаций для перемещения и масштабирования
-            TransformGroup transformGroup = new TransformGroup();
-            TranslateTransform translateTransform = new TranslateTransform(0, 0);
+            // Проверяем, что ScrollViewer передан
+            if (scrollViewer == null)
+            {
+                MessageBox.Show("ScrollViewer не был передан в метод.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            // Создаем группу трансформаций только для масштабирования
             ScaleTransform scaleTransform = new ScaleTransform(1, 1);
-            transformGroup.Children.Add(scaleTransform);
-            transformGroup.Children.Add(translateTransform);
-            schemaCanvas.RenderTransform = transformGroup;
+            schemaCanvas.RenderTransform = scaleTransform;
 
             if (jsonObject == null || jsonObject["instances"] == null)
             {
@@ -208,39 +211,41 @@ namespace STEP_JSON_Application_for_ASKON
                 }
             }
 
-            // Добавляем обработчики событий для плавного перемещения по холсту
-            Point lastMousePosition = new Point();
+            // Переменные для управления перемещением
+            Point? lastMousePosition = null;
             bool isDragging = false;
 
+            // Обработчики событий для перемещения через ScrollViewer
             schemaCanvas.MouseLeftButtonDown += (sender, e) =>
             {
                 schemaCanvas.Cursor = Cursors.Hand;
-                lastMousePosition = e.GetPosition(schemaCanvas);
+                lastMousePosition = e.GetPosition(scrollViewer); // Относительно ScrollViewer
                 isDragging = true;
                 schemaCanvas.CaptureMouse();
-                CompositionTarget.Rendering += UpdateCanvasPosition;
             };
 
-            void UpdateCanvasPosition(object sender, EventArgs e)
+            schemaCanvas.MouseMove += (sender, e) =>
             {
-                if (isDragging)
+                if (isDragging && lastMousePosition.HasValue)
                 {
-                    Point currentPosition = Mouse.GetPosition(schemaCanvas);
-                    Vector delta = currentPosition - lastMousePosition;
-                    lastMousePosition = currentPosition;
+                    Point currentPosition = e.GetPosition(scrollViewer);
+                    Vector delta = currentPosition - lastMousePosition.Value;
 
-                    // Свободное перемещение без ограничений
-                    translateTransform.X += delta.X;
-                    translateTransform.Y += delta.Y;
+                    // Изменяем позицию прокрутки ScrollViewer
+                    scrollViewer.ScrollToHorizontalOffset(scrollViewer.HorizontalOffset - delta.X);
+                    scrollViewer.ScrollToVerticalOffset(scrollViewer.VerticalOffset - delta.Y);
+
+                    // Обновляем последнюю позицию мыши
+                    lastMousePosition = currentPosition;
                 }
-            }
+            };
 
             schemaCanvas.MouseLeftButtonUp += (sender, e) =>
             {
                 schemaCanvas.Cursor = Cursors.Arrow;
                 isDragging = false;
+                lastMousePosition = null;
                 schemaCanvas.ReleaseMouseCapture();
-                CompositionTarget.Rendering -= UpdateCanvasPosition;
             };
 
             schemaCanvas.MouseLeave += (sender, e) =>
@@ -249,35 +254,32 @@ namespace STEP_JSON_Application_for_ASKON
                 {
                     schemaCanvas.Cursor = Cursors.Arrow;
                     isDragging = false;
+                    lastMousePosition = null;
                     schemaCanvas.ReleaseMouseCapture();
-                    CompositionTarget.Rendering -= UpdateCanvasPosition;
                 }
             };
 
-            // Добавляем обработчик для масштабирования с помощью CTRL + колесико мыши
+            // Обработчик для масштабирования с помощью ALT + колесико мыши
             schemaCanvas.MouseWheel += (sender, e) =>
             {
-                if (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
+                if (Keyboard.IsKeyDown(Key.LeftAlt) || Keyboard.IsKeyDown(Key.RightAlt))
                 {
                     double scaleFactor = e.Delta > 0 ? 1.1 : 0.9;
                     double newScaleX = scaleTransform.ScaleX * scaleFactor;
                     double newScaleY = scaleTransform.ScaleY * scaleFactor;
 
-                    // Вычисляем минимальный масштаб, при котором схема помещается в видимую область
-                    double viewWidth = schemaCanvas.ActualWidth;
-                    double viewHeight = schemaCanvas.ActualHeight;
-                    double minScaleX = viewWidth / schemaCanvas.Width;
-                    double minScaleY = viewHeight / schemaCanvas.Height;
-                    double minScale = Math.Max(minScaleX, minScaleY);
-
-                    // Ограничиваем масштаб: минимум - чтобы схема помещалась, максимум - 5
-                    if (newScaleX >= minScale && newScaleX <= 5)
+                    // Ограничиваем масштаб: минимум 0.1, максимум 5
+                    if (newScaleX >= 0.1 && newScaleX <= 5)
                     {
                         Point mousePosition = e.GetPosition(schemaCanvas);
                         scaleTransform.CenterX = mousePosition.X;
                         scaleTransform.CenterY = mousePosition.Y;
                         scaleTransform.ScaleX = newScaleX;
                         scaleTransform.ScaleY = newScaleY;
+
+                        // Корректируем размеры холста после масштабирования
+                        schemaCanvas.Width = maxCanvasWidth * newScaleX + 20;
+                        schemaCanvas.Height = maxCanvasHeight * newScaleY + 20;
                     }
                     e.Handled = true;
                 }

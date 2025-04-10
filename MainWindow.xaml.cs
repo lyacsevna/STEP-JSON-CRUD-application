@@ -6,8 +6,8 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input; // Добавлено для Keyboard.Modifiers
-using System.Windows.Media; // Для ScaleTransform
+using System.Windows.Input;
+using System.Windows.Media;
 
 namespace STEP_JSON_Application_for_ASKON
 {
@@ -16,7 +16,6 @@ namespace STEP_JSON_Application_for_ASKON
         private string currentFilePath = string.Empty;
         private double scale = 1.0; // Текущий масштаб
         private const double ScaleRate = 0.1; // Шаг изменения масштаба
-
 
         private List<string> loadedFilePaths = new List<string>(); //для хранения путей загруженных файлов
 
@@ -27,15 +26,13 @@ namespace STEP_JSON_Application_for_ASKON
         public MainWindow()
         {
             InitializeComponent();
-            //ViewButton.IsChecked = true;
-
-            // Подключаем обработчик события MouseWheel к SchemaCanvas
+            // Подключаем обработчик события MouseWheel к SchemaCanvas только в конструкторе
             SchemaCanvas.MouseWheel += SchemaCanvas_MouseWheel;
             // Применяем ScaleTransform к SchemaCanvas
             SchemaCanvas.RenderTransform = new ScaleTransform(scale, scale);
         }
 
-        // Обработчик масштабирования
+        // Обработчик масштабирования (только для Ctrl, Alt обрабатывается в SchemaManager)
         private void SchemaCanvas_MouseWheel(object sender, MouseWheelEventArgs e)
         {
             if (Keyboard.Modifiers == ModifierKeys.Control) // Проверяем, нажат ли Ctrl
@@ -49,16 +46,19 @@ namespace STEP_JSON_Application_for_ASKON
                 else if (e.Delta < 0)
                     scale -= ScaleRate; // Уменьшение
 
-                // Ограничиваем масштаб, чтобы не уйти в отрицательные значения или слишком мелкий/крупный масштаб
+                // Ограничиваем масштаб
                 scale = Math.Max(0.2, Math.Min(scale, 5.0));
 
                 transform.ScaleX = scale;
                 transform.ScaleY = scale;
 
+                // Корректируем размеры холста после масштабирования
+                SchemaCanvas.Width = SchemaCanvas.Width * scale / transform.ScaleX + 20;
+                SchemaCanvas.Height = SchemaCanvas.Height * scale / transform.ScaleY + 20;
+
                 e.Handled = true; // Предотвращаем дальнейшую обработку события
             }
-        } 
-
+        }
 
         private void ImportButton_Click(object sender, RoutedEventArgs e)
         {
@@ -91,7 +91,8 @@ namespace STEP_JSON_Application_for_ASKON
                         }
 
                         treeManager.ExpandAllTreeViewItems(TextTabTreeView);
-                        schemaManager.GenerateSchema(jsonObject, SchemaCanvas);
+                        // Передаем ScrollViewer из SchemaTab
+                        schemaManager.GenerateSchema(jsonObject, SchemaCanvas, SchemaTab.Content as ScrollViewer);
                     }
                     catch (Exception ex)
                     {
@@ -107,7 +108,6 @@ namespace STEP_JSON_Application_for_ASKON
                 {
                     MessageBox.Show("Файл не является валидным JSON.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
-              
             }
         }
 
@@ -125,7 +125,6 @@ namespace STEP_JSON_Application_for_ASKON
             }
         }
 
-
         // SELECTING FILES FROM UPLOADED TO LISTBOX
         private void LoadedFilesListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -141,7 +140,6 @@ namespace STEP_JSON_Application_for_ASKON
                     var jsonObject = JObject.Parse(fileContent);
                     var treeNodes = treeManager.FormatJsonObject(jsonObject);
 
-                    
                     TextTabTreeView.Items.Clear();
                     SchemaCanvas.Children.Clear();
                     foreach (var node in treeNodes)
@@ -150,14 +148,14 @@ namespace STEP_JSON_Application_for_ASKON
                     }
 
                     treeManager.ExpandAllTreeViewItems(TextTabTreeView);
-                    schemaManager.GenerateSchema(jsonObject, SchemaCanvas);
+                    // Передаем ScrollViewer из SchemaTab
+                    schemaManager.GenerateSchema(jsonObject, SchemaCanvas, SchemaTab.Content as ScrollViewer);
                     DefaultFileNameTextBlock.Text = selectedFilePath;
-
                 }
             }
         }
 
-        // GETTING THE PATH OF THE DOWNLOADED FILE IN LITBOX
+        // GETTING THE PATH OF THE DOWNLOADED FILE IN LISTBOX
         private string GetSelectedFilePath(string selectedFileName)
         {
             try
@@ -206,8 +204,7 @@ namespace STEP_JSON_Application_for_ASKON
             }
         }
 
-
-        // BUTTONS IN THE MENU BANE
+        // BUTTONS IN THE MENU BAR
         private void OpenFile_Click(object sender, RoutedEventArgs e)
         {
             ImportButton_Click(sender, e);
@@ -230,12 +227,9 @@ namespace STEP_JSON_Application_for_ASKON
 
         private void TextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-
         }
 
-
         // BUTTONS FOR SWITCHING THE VIEWING AND EDITING MODE
-
         private void ViewButton_Checked(object sender, RoutedEventArgs e)
         {
             EditorButton.IsChecked = false;
@@ -247,10 +241,8 @@ namespace STEP_JSON_Application_for_ASKON
             ViewButton.IsChecked = false;
             StepJsonTextBox.IsReadOnly = false;
         }
-
     }
 
-    // SOMETHING FOR WORKING WITH WOOD.....
     public class TreeNode
     {
         public string Name { get; set; }
@@ -259,26 +251,3 @@ namespace STEP_JSON_Application_for_ASKON
         public bool IsExpanded { get; set; }
     }
 }
-
-//                    _oo0oo_
-//                   o8888888o
-//                   88" . "88
-//                   (| -_- |)
-//                   0\  =  /0
-//                 ___/`---'\___
-//               .' \\|     |// '.
-//              / \\|||  :  |||// \
-//             / _||||| -:- |||||- \
-//            |   | \\\  -  /// |   |
-//            | \_|  ''\---/''  |_/ |
-//            \  .-\__  '-'  ___/-. /
-//          ___'. .'  /--.--\  `. .'___
-//       ."" '<  `.___\_<|>_/___.' >' "".
-//      | | :  `- \`.;`\ _ /`;.`/ - ` : | |
-//      \  \ `_.   \_ __\ /__ _/   .-` /  /
-//  =====`-.____`.___ \_____/___.-`___.-'=====
-//                       `=---='
-//
-//  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//
-//            God Bless         No Bugs
