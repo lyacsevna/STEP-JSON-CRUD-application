@@ -29,9 +29,13 @@ namespace STEP_JSON_Application_for_ASKON
                 return;
             }
 
-            // Создаем группу трансформаций только для масштабирования
-            ScaleTransform scaleTransform = new ScaleTransform(1, 1);
-            schemaCanvas.RenderTransform = scaleTransform;
+            // Используем существующую трансформацию или создаем новую
+            ScaleTransform scaleTransform = schemaCanvas.RenderTransform as ScaleTransform;
+            if (scaleTransform == null)
+            {
+                scaleTransform = new ScaleTransform(1, 1);
+                schemaCanvas.RenderTransform = scaleTransform;
+            }
 
             if (jsonObject == null || jsonObject["instances"] == null)
             {
