@@ -10,117 +10,167 @@ namespace STEP_JSON_Application_for_ASKON
 {
     public class TreeManager
     {
-        public List<TreeNode> FormatJsonObject(JObject jsonObject) => FormatJson(jsonObject);
+        // Configuration for flexibility (could be externalized)
+        private readonly string InstancesKey = "instances";
+        private readonly string TypeKey = "type";
+        private readonly string AttributesKey = "attributes";
+        private readonly string IdKey = "id";
+        private readonly string NameKey = "name";
+        private readonly string RelationKey = "next_assembly_usage_occurrence"; // Common relation type prefix
+        private readonly string RelatingKey = "relating_product_definition";
+        private readonly string RelatedKey = "related_product_definition";
+        private readonly string QuantityKey = "quantity";
+        private readonly string UnitKey = "measure_with_unit";
+        private readonly string VersionKey = "formation";
 
-        public List<TreeNode> FormatJson(JObject json)
+        public List<TreeNode> FormatJsonObject(JObject jsonObject)
         {
+            if (jsonObject == null)
+                throw new ArgumentNullException(nameof(jsonObject));
+
             var rootNodes = new List<TreeNode>();
 
-            if (json["instances"] == null)
+            // Check for instances array
+            if (jsonObject[InstancesKey] is JArray instances)
             {
+                rootNodes.AddRange(BuildTreeFromInstances(instances));
+            }
+            else
+            {
+                // Fallback to generic JSON processing
                 var rootNode = new TreeNode
                 {
                     Name = "=== ДАННЫЕ ===",
                     IsExpanded = true,
                     FontSize = 14
                 };
-                ProcessJObject(json, rootNode);
+                ProcessJObject(jsonObject, rootNode);
                 rootNodes.Add(rootNode);
-                return rootNodes;
-            }
-
-            var instances = json["instances"] as JArray;
-
-            // Находим корневую сборку (Прижим)
-            var rootProduct = instances.FirstOrDefault(i =>
-                i["attributes"]?["id"]?.ToString() == "АБВГ.123456.001" &&
-                i["type"]?.ToString() == "eskd_product");
-
-            if (rootProduct != null)
-            {
-                var rootProductDef = instances.FirstOrDefault(i =>
-                    i["type"]?.ToString() == "product_definition" &&
-                    i["attributes"]?["formation"]?.ToString() == "#2");
-
-                if (rootProductDef != null)
-                {
-                    var rootNode = CreateProductNode(rootProductDef, instances, true);
-                    rootNodes.Add(rootNode);
-                }
             }
 
             return rootNodes;
         }
 
-        private TreeNode CreateProductNode(JToken productDef, JArray allInstances, bool isRoot = false)
+        private List<TreeNode> BuildTreeFromInstances(JArray instances)
         {
-            string productId = productDef["id"]?.ToString();
-            var attributes = productDef["attributes"] as JObject;
-            string defId = attributes?["id"]?.ToString() ?? "Unknown Definition";
-            string formationId = attributes?["formation"]?.ToString();
+            var rootNodes = new List<TreeNode>();
+            var instanceDict = instances.ToDictionary(i => i[IdKey]?.ToString(), i => i);
 
-            var productDescription = GetProductDescription(productDef, allInstances);
+            // Find potential root nodes (no incoming relations)
+            var referencedIds = instances
+                .Where(i => i[TypeKey]?.ToString().Contains(RelationKey) == true)
+                .Select(i => i[AttributesKey]?[RelatedKey]?.ToString())
+                .Where(id => !string.IsNullOrEmpty(id))
+                .ToHashSet();
+
+            var rootCandidates = instances
+                .Where(i => !referencedIds.Contains(i[IdKey]?.ToString()) &&
+                            i[TypeKey]?.ToString().Contains("product") == true)
+                .ToList();
+
+            // If no clear root, use all product definitions or first instance
+            if (!rootCandidates.Any())
+            {
+                rootCandidates = instances
+                    .Where(i => i[TypeKey]?.ToString().Contains("product_definition") == true)
+                    .ToList();
+            }
+
+            foreach (var root in rootCandidates)
+            {
+                var rootNode = CreateProductNode(root, instances, instanceDict, true);
+                if (rootNode != null)
+                    rootNodes.Add(rootNode);
+            }
+
+            // If no roots found, create a generic root
+            if (!rootNodes.Any() && instances.Any())
+            {
+                var fallbackNode = new TreeNode
+                {
+                    Name = "=== СТРУКТУРА ===",
+                    IsExpanded = true,
+                    FontSize = 14
+                };
+                foreach (var instance in instances)
+                {
+                    var node = CreateGenericNode(instance, instances, instanceDict);
+                    if (node != null)
+                        fallbackNode.Children.Add(node);
+                }
+                rootNodes.Add(fallbackNode);
+            }
+
+            return rootNodes;
+        }
+
+        private TreeNode CreateProductNode(JToken product, JArray instances, Dictionary<string, JToken> instanceDict, bool isRoot = false)
+        {
+            if (product == null || product[IdKey] == null)
+                return null;
+
+            string productId = product[IdKey].ToString();
+            var attributes = product[AttributesKey] as JObject;
+            string defId = attributes?[IdKey]?.ToString() ?? "Unknown";
+            string formationId = attributes?[VersionKey]?.ToString();
 
             var productNode = new TreeNode
             {
-                Name = isRoot ? $"# {defId}" : string.Empty,
-                Value = productDescription,
+                Name = isRoot ? $"# {defId}" : defId,
+                Value = GetProductDescription(product, instances, instanceDict),
                 IsExpanded = true,
                 FontSize = 14,
                 Margin = new Thickness(0, 5, 0, 5)
             };
 
-            // Добавляем версию
-            if (!string.IsNullOrEmpty(formationId))
-            {
-                var versionInstance = allInstances.FirstOrDefault(i => i["id"]?.ToString() == formationId);
-                if (versionInstance != null)
-                {
-                    var versionNode = new TreeNode
-                    {
-                        Name = "Версия",
-                        Value = GetVersionDescription(versionInstance),
-                        FontSize = 14,
-                        Margin = new Thickness(10, 2, 0, 2)
-                    };
-                    productNode.Children.Add(versionNode);
-                }
-            }
+            //// Add version information
+            //if (!string.IsNullOrEmpty(formationId) && instanceDict.TryGetValue(formationId, out var versionInstance))
+            //{
+            //    var versionNode = new TreeNode
+            //    {
+            //        Name = "Версия",
+            //        Value = GetVersionDescription(versionInstance),
+            //        FontSize = 14,
+            //        Margin = new Thickness(10, 2, 0, 2)
+            //    };
+            //    productNode.Children.Add(versionNode);
+            //}
 
-            // Добавляем компоненты
-            var components = allInstances
-                .Where(i => i["type"]?.ToString()?.Contains("next_assembly_usage_occurrence") == true &&
-                            i["attributes"]?["relating_product_definition"]?.ToString() == productId)
+            // Find and add components
+            var components = instances
+                .Where(i => i[TypeKey]?.ToString().Contains(RelationKey) == true &&
+                            i[AttributesKey]?[RelatingKey]?.ToString() == productId)
                 .ToList();
 
             foreach (var component in components)
             {
-                var componentNode = CreateComponentNode(component, allInstances);
-                productNode.Children.Add(componentNode);
-
-                // Рекурсивно добавляем вложенные компоненты
-                string relatedId = component["attributes"]?["related_product_definition"]?.ToString();
-                var relatedProduct = allInstances.FirstOrDefault(i => i["id"]?.ToString() == relatedId);
-
-                if (relatedProduct != null &&
-                    relatedProduct["attributes"]?["formation"] != null)
+                var componentNode = CreateComponentNode(component, instances, instanceDict);
+                if (componentNode != null)
                 {
-                    var nestedProductNode = CreateProductNode(relatedProduct, allInstances);
-                    componentNode.Children.Add(nestedProductNode);
+                    productNode.Children.Add(componentNode);
+
+                    // Recursively add nested products
+                    string relatedId = component[AttributesKey]?[RelatedKey]?.ToString();
+                    if (!string.IsNullOrEmpty(relatedId) && instanceDict.TryGetValue(relatedId, out var relatedProduct))
+                    {
+                        var nestedNode = CreateProductNode(relatedProduct, instances, instanceDict);
+                        if (nestedNode != null)
+                            componentNode.Children.Add(nestedNode);
+                    }
                 }
             }
 
             return productNode;
         }
 
-        private TreeNode CreateComponentNode(JToken component, JArray allInstances)
+        private TreeNode CreateComponentNode(JToken component, JArray instances, Dictionary<string, JToken> instanceDict)
         {
-            var attributes = component["attributes"] as JObject;
-            string relatedId = attributes?["related_product_definition"]?.ToString();
+            var attributes = component[AttributesKey] as JObject;
             string refDesignator = attributes?["reference_designator"]?.ToString();
-            string quantityId = attributes?["quantity"]?.ToString();
-            string quantityLabel = GetQuantityLabel(quantityId, allInstances);
-            string unit = GetUnitForQuantity(quantityId, allInstances);
+            string quantityId = attributes?[QuantityKey]?.ToString();
+
+            string quantityLabel = GetQuantityLabel(quantityId, instanceDict);
+            string unit = GetUnitForQuantity(quantityId, instanceDict);
 
             var componentNode = new TreeNode
             {
@@ -134,76 +184,170 @@ namespace STEP_JSON_Application_for_ASKON
             return componentNode;
         }
 
-        private string GetProductDescription(JToken productInstance, JArray allInstances)
+        private TreeNode CreateGenericNode(JToken instance, JArray instances, Dictionary<string, JToken> instanceDict)
         {
-            var attributes = productInstance["attributes"] as JObject;
-            string type = productInstance["type"]?.ToString() ?? "unknown";
+            var attributes = instance[AttributesKey] as JObject;
+            string id = instance[IdKey]?.ToString() ?? "Unknown";
+            string type = instance[TypeKey]?.ToString() ?? "Unknown";
+            string name = attributes?[NameKey]?.ToString() ?? attributes?[IdKey]?.ToString() ?? type;
 
-            if (type.Contains("product_definition"))
+            var node = new TreeNode
             {
-                string defId = attributes?["id"]?.ToString() ?? "Unknown Definition";
-                string formationId = attributes?["formation"]?.ToString();
+                Name = name,
+                Value = type,
+                IsExpanded = false,
+                FontSize = 12,
+                Margin = new Thickness(5, 2, 0, 2)
+            };
 
-                if (!string.IsNullOrEmpty(formationId))
+            // Add attributes as children
+            if (attributes != null)
+            {
+                foreach (var attr in attributes.Properties())
                 {
-                    var formation = allInstances.FirstOrDefault(i => i["id"]?.ToString() == formationId);
-                    string productId = formation?["attributes"]?["of_product"]?.ToString();
-                    string version = formation?["attributes"]?["id"]?.ToString() ?? "Unknown Version";
-
-                    if (!string.IsNullOrEmpty(productId))
+                    var attrNode = new TreeNode
                     {
-                        var product = allInstances.FirstOrDefault(i => i["id"]?.ToString() == productId);
-                        string productCode = product?["attributes"]?["id"]?.ToString() ?? "Unknown Product";
-                        string productName = product?["attributes"]?["name"]?.ToString() ?? "";
+                        Name = attr.Name,
+                        Value = attr.Value.ToString(),
+                        FontSize = 12,
+                        Margin = new Thickness(10, 1, 0, 1)
+                    };
+                    node.Children.Add(attrNode);
+                }
+            }
+
+            return node;
+        }
+
+        private string GetProductDescription(JToken product, JArray instances, Dictionary<string, JToken> instanceDict)
+        {
+            var attributes = product[AttributesKey] as JObject;
+            string type = product[TypeKey]?.ToString() ?? "unknown";
+            string defId = attributes?[IdKey]?.ToString() ?? "Unknown";
+            string formationId = attributes?[VersionKey]?.ToString();
+
+            if (type.Contains("product_definition") && !string.IsNullOrEmpty(formationId))
+            {
+                if (instanceDict.TryGetValue(formationId, out var formation))
+                {
+                    string productId = formation[AttributesKey]?["of_product"]?.ToString();
+                    string version = formation[AttributesKey]?[IdKey]?.ToString() ?? "Unknown";
+
+                    if (!string.IsNullOrEmpty(productId) && instanceDict.TryGetValue(productId, out var prod))
+                    {
+                        string productCode = prod[AttributesKey]?[IdKey]?.ToString() ?? "Unknown";
+                        string productName = prod[AttributesKey]?[NameKey]?.ToString() ?? "";
                         return $"{productCode} {productName} версия {version}".Trim();
                     }
                     return $"{defId} версия {version}";
                 }
-                return defId;
             }
-            return attributes?["name"]?.ToString() ?? "Unknown Product";
+
+            return attributes?[NameKey]?.ToString() ?? defId;
         }
 
         private string GetVersionDescription(JToken versionInstance)
         {
-            var attributes = versionInstance["attributes"] as JObject;
-            return attributes?["id"]?.ToString() ?? "Unknown Version";
+            var attributes = versionInstance[AttributesKey] as JObject;
+            return attributes?[IdKey]?.ToString() ?? "Unknown";
         }
 
-        private string GetQuantityLabel(string quantityId, JArray allInstances)
+        private string GetQuantityLabel(string quantityId, Dictionary<string, JToken> instanceDict)
         {
-            if (string.IsNullOrEmpty(quantityId)) return "неизвестно";
+            if (string.IsNullOrEmpty(quantityId) || !instanceDict.TryGetValue(quantityId, out var quantity))
+                return "неизвестно";
 
-            var quantity = allInstances.FirstOrDefault(i =>
-                i["id"]?.ToString() == quantityId &&
-                i["type"]?.ToString() == "measure_with_unit");
-
-            return quantity?["attributes"]?["value_component"]?.ToString()?.Trim() ?? "неизвестно";
+            return quantity[AttributesKey]?["value_component"]?.ToString()?.Trim() ?? "неизвестно";
         }
 
-        private string GetUnitForQuantity(string quantityId, JArray allInstances)
+        private string GetUnitForQuantity(string quantityId, Dictionary<string, JToken> instanceDict)
         {
-            if (string.IsNullOrEmpty(quantityId)) return "шт.";
+            if (string.IsNullOrEmpty(quantityId) || !instanceDict.TryGetValue(quantityId, out var quantity))
+                return "шт.";
 
-            var quantity = allInstances.FirstOrDefault(i =>
-                i["id"]?.ToString() == quantityId &&
-                i["type"]?.ToString() == "measure_with_unit");
-            if (quantity == null) return "шт.";
+            string unitId = quantity[AttributesKey]?["unit_component"]?.ToString();
+            if (!string.IsNullOrEmpty(unitId) && instanceDict.TryGetValue(unitId, out var unit))
+            {
+                return unit[AttributesKey]?[IdKey]?.ToString() ?? "шт.";
+            }
 
-            string unitId = quantity["attributes"]?["unit_component"]?.ToString();
-            var unit = allInstances.FirstOrDefault(i =>
-                i["id"]?.ToString() == unitId &&
-                i["type"]?.ToString() == "context_dependent_unit");
-
-            return unit?["attributes"]?["id"]?.ToString() ?? "шт.";
+            return "шт.";
         }
 
-        // Остальные методы остаются без изменений
-        private void ProcessInstances(JArray instances, TreeNode parentNode) { /* ... */ }
-        private void ProcessFilteredAttributes(JObject attributes, TreeNode parentNode) { /* ... */ }
-        private void ProcessJObject(JObject jObject, TreeNode parentNode) { /* ... */ }
-        private void ProcessArray(JArray array, TreeNode parentNode) { /* ... */ }
-        public void ExpandAllTreeViewItems(ItemsControl itemsControl) { /* ... */ }
+        private void ProcessJObject(JObject jObject, TreeNode parentNode)
+        {
+            foreach (var property in jObject.Properties())
+            {
+                var childNode = new TreeNode
+                {
+                    Name = property.Name,
+                    FontSize = 12,
+                    Margin = new Thickness(5, 1, 0, 1)
+                };
+
+                if (property.Value is JObject childObject)
+                {
+                    childNode.IsExpanded = false;
+                    ProcessJObject(childObject, childNode);
+                }
+                else if (property.Value is JArray childArray)
+                {
+                    childNode.IsExpanded = false;
+                    ProcessArray(childArray, childNode);
+                }
+                else
+                {
+                    childNode.Value = property.Value.ToString();
+                }
+
+                parentNode.Children.Add(childNode);
+            }
+        }
+
+        private void ProcessArray(JArray array, TreeNode parentNode)
+        {
+            for (int i = 0; i < array.Count; i++)
+            {
+                var childNode = new TreeNode
+                {
+                    Name = $"[{i}]",
+                    FontSize = 12,
+                    Margin = new Thickness(5, 1, 0, 1)
+                };
+
+                if (array[i] is JObject childObject)
+                {
+                    childNode.IsExpanded = false;
+                    ProcessJObject(childObject, childNode);
+                }
+                else if (array[i] is JArray childArray)
+                {
+                    childNode.IsExpanded = false;
+                    ProcessArray(childArray, childNode);
+                }
+                else
+                {
+                    childNode.Value = array[i].ToString();
+                }
+
+                parentNode.Children.Add(childNode);
+            }
+        }
+
+        public void ExpandAllTreeViewItems(ItemsControl itemsControl)
+        {
+            if (itemsControl == null)
+                return;
+
+            foreach (var item in itemsControl.Items)
+            {
+                if (itemsControl.ItemContainerGenerator.ContainerFromItem(item) is TreeViewItem treeViewItem)
+                {
+                    treeViewItem.IsExpanded = true;
+                    ExpandAllTreeViewItems(treeViewItem);
+                }
+            }
+        }
     }
 
     public class TreeNode
