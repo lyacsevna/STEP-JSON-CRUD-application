@@ -54,7 +54,6 @@ namespace STEP_JSON_Application_for_ASKON
         private List<TreeNode> BuildTreeFromInstances(JArray instances)
         {
             var rootNodes = new List<TreeNode>();
-            var instanceDict = instances.ToDictionary(i => i[IdKey]?.ToString(), i => i);
 
             // Find potential root nodes (no incoming relations)
             var referencedIds = instances
@@ -78,7 +77,7 @@ namespace STEP_JSON_Application_for_ASKON
 
             foreach (var root in rootCandidates)
             {
-                var rootNode = CreateProductNode(root, instances, instanceDict, true);
+                var rootNode = CreateProductNode(root, instances, true);
                 if (rootNode != null)
                     rootNodes.Add(rootNode);
             }
@@ -94,7 +93,7 @@ namespace STEP_JSON_Application_for_ASKON
                 };
                 foreach (var instance in instances)
                 {
-                    var node = CreateGenericNode(instance, instances, instanceDict);
+                    var node = CreateGenericNode(instance, instances);
                     if (node != null)
                         fallbackNode.Children.Add(node);
                 }
@@ -104,7 +103,7 @@ namespace STEP_JSON_Application_for_ASKON
             return rootNodes;
         }
 
-        private TreeNode CreateProductNode(JToken product, JArray instances, Dictionary<string, JToken> instanceDict, bool isRoot = false)
+        private TreeNode CreateProductNode(JToken product, JArray instances, bool isRoot = false)
         {
             if (product == null || product[IdKey] == null)
                 return null;
@@ -117,24 +116,11 @@ namespace STEP_JSON_Application_for_ASKON
             var productNode = new TreeNode
             {
                 Name = isRoot ? $"# {defId}" : defId,
-                Value = GetProductDescription(product, instances, instanceDict),
+                Value = GetProductDescription(product, instances),
                 IsExpanded = true,
                 FontSize = 14,
                 Margin = new Thickness(0, 5, 0, 5)
             };
-
-            //// Add version information
-            //if (!string.IsNullOrEmpty(formationId) && instanceDict.TryGetValue(formationId, out var versionInstance))
-            //{
-            //    var versionNode = new TreeNode
-            //    {
-            //        Name = "Версия",
-            //        Value = GetVersionDescription(versionInstance),
-            //        FontSize = 14,
-            //        Margin = new Thickness(10, 2, 0, 2)
-            //    };
-            //    productNode.Children.Add(versionNode);
-            //}
 
             // Find and add components
             var components = instances
@@ -144,18 +130,22 @@ namespace STEP_JSON_Application_for_ASKON
 
             foreach (var component in components)
             {
-                var componentNode = CreateComponentNode(component, instances, instanceDict);
+                var componentNode = CreateComponentNode(component, instances);
                 if (componentNode != null)
                 {
                     productNode.Children.Add(componentNode);
 
                     // Recursively add nested products
                     string relatedId = component[AttributesKey]?[RelatedKey]?.ToString();
-                    if (!string.IsNullOrEmpty(relatedId) && instanceDict.TryGetValue(relatedId, out var relatedProduct))
+                    if (!string.IsNullOrEmpty(relatedId))
                     {
-                        var nestedNode = CreateProductNode(relatedProduct, instances, instanceDict);
-                        if (nestedNode != null)
-                            componentNode.Children.Add(nestedNode);
+                        var relatedProduct = instances.FirstOrDefault(i => i[IdKey]?.ToString() == relatedId);
+                        if (relatedProduct != null)
+                        {
+                            var nestedNode = CreateProductNode(relatedProduct, instances);
+                            if (nestedNode != null)
+                                componentNode.Children.Add(nestedNode);
+                        }
                     }
                 }
             }
@@ -163,14 +153,14 @@ namespace STEP_JSON_Application_for_ASKON
             return productNode;
         }
 
-        private TreeNode CreateComponentNode(JToken component, JArray instances, Dictionary<string, JToken> instanceDict)
+        private TreeNode CreateComponentNode(JToken component, JArray instances)
         {
             var attributes = component[AttributesKey] as JObject;
             string refDesignator = attributes?["reference_designator"]?.ToString();
             string quantityId = attributes?[QuantityKey]?.ToString();
 
-            string quantityLabel = GetQuantityLabel(quantityId, instanceDict);
-            string unit = GetUnitForQuantity(quantityId, instanceDict);
+            string quantityLabel = GetQuantityLabel(quantityId, instances);
+            string unit = GetUnitForQuantity(quantityId, instances);
 
             var componentNode = new TreeNode
             {
@@ -184,7 +174,7 @@ namespace STEP_JSON_Application_for_ASKON
             return componentNode;
         }
 
-        private TreeNode CreateGenericNode(JToken instance, JArray instances, Dictionary<string, JToken> instanceDict)
+        private TreeNode CreateGenericNode(JToken instance, JArray instances)
         {
             var attributes = instance[AttributesKey] as JObject;
             string id = instance[IdKey]?.ToString() ?? "Unknown";
@@ -219,7 +209,7 @@ namespace STEP_JSON_Application_for_ASKON
             return node;
         }
 
-        private string GetProductDescription(JToken product, JArray instances, Dictionary<string, JToken> instanceDict)
+        private string GetProductDescription(JToken product, JArray instances)
         {
             var attributes = product[AttributesKey] as JObject;
             string type = product[TypeKey]?.ToString() ?? "unknown";
@@ -228,16 +218,21 @@ namespace STEP_JSON_Application_for_ASKON
 
             if (type.Contains("product_definition") && !string.IsNullOrEmpty(formationId))
             {
-                if (instanceDict.TryGetValue(formationId, out var formation))
+                var formation = instances.FirstOrDefault(i => i[IdKey]?.ToString() == formationId);
+                if (formation != null)
                 {
                     string productId = formation[AttributesKey]?["of_product"]?.ToString();
                     string version = formation[AttributesKey]?[IdKey]?.ToString() ?? "Unknown";
 
-                    if (!string.IsNullOrEmpty(productId) && instanceDict.TryGetValue(productId, out var prod))
+                    if (!string.IsNullOrEmpty(productId))
                     {
-                        string productCode = prod[AttributesKey]?[IdKey]?.ToString() ?? "Unknown";
-                        string productName = prod[AttributesKey]?[NameKey]?.ToString() ?? "";
-                        return $"{productCode} {productName} версия {version}".Trim();
+                        var prod = instances.FirstOrDefault(i => i[IdKey]?.ToString() == productId);
+                        if (prod != null)
+                        {
+                            string productCode = prod[AttributesKey]?[IdKey]?.ToString() ?? "Unknown";
+                            string productName = prod[AttributesKey]?[NameKey]?.ToString() ?? "";
+                            return $"{productCode} {productName} версия {version}".Trim();
+                        }
                     }
                     return $"{defId} версия {version}";
                 }
@@ -246,29 +241,29 @@ namespace STEP_JSON_Application_for_ASKON
             return attributes?[NameKey]?.ToString() ?? defId;
         }
 
-        private string GetVersionDescription(JToken versionInstance)
+        private string GetQuantityLabel(string quantityId, JArray instances)
         {
-            var attributes = versionInstance[AttributesKey] as JObject;
-            return attributes?[IdKey]?.ToString() ?? "Unknown";
-        }
-
-        private string GetQuantityLabel(string quantityId, Dictionary<string, JToken> instanceDict)
-        {
-            if (string.IsNullOrEmpty(quantityId) || !instanceDict.TryGetValue(quantityId, out var quantity))
+            if (string.IsNullOrEmpty(quantityId))
                 return "неизвестно";
 
-            return quantity[AttributesKey]?["value_component"]?.ToString()?.Trim() ?? "неизвестно";
+            var quantity = instances.FirstOrDefault(i => i[IdKey]?.ToString() == quantityId);
+            return quantity?[AttributesKey]?["value_component"]?.ToString()?.Trim() ?? "неизвестно";
         }
 
-        private string GetUnitForQuantity(string quantityId, Dictionary<string, JToken> instanceDict)
+        private string GetUnitForQuantity(string quantityId, JArray instances)
         {
-            if (string.IsNullOrEmpty(quantityId) || !instanceDict.TryGetValue(quantityId, out var quantity))
+            if (string.IsNullOrEmpty(quantityId))
+                return "шт.";
+
+            var quantity = instances.FirstOrDefault(i => i[IdKey]?.ToString() == quantityId);
+            if (quantity == null)
                 return "шт.";
 
             string unitId = quantity[AttributesKey]?["unit_component"]?.ToString();
-            if (!string.IsNullOrEmpty(unitId) && instanceDict.TryGetValue(unitId, out var unit))
+            if (!string.IsNullOrEmpty(unitId))
             {
-                return unit[AttributesKey]?[IdKey]?.ToString() ?? "шт.";
+                var unit = instances.FirstOrDefault(i => i[IdKey]?.ToString() == unitId);
+                return unit?[AttributesKey]?[IdKey]?.ToString() ?? "шт.";
             }
 
             return "шт.";
