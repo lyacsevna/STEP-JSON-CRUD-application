@@ -2,10 +2,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows;
 using System.Windows.Shapes;
 
 namespace STEP_JSON_Application_for_ASKON
@@ -29,7 +29,7 @@ namespace STEP_JSON_Application_for_ASKON
                 return;
             }
 
-            // Используем существующую трансформацию или создаем новую
+            // Создаем группу трансформаций только для масштабирования, используя существующую трансформацию, если она есть
             ScaleTransform scaleTransform = schemaCanvas.RenderTransform as ScaleTransform;
             if (scaleTransform == null)
             {
@@ -53,9 +53,24 @@ namespace STEP_JSON_Application_for_ASKON
             var nodes = new Dictionary<string, (UIElement Element, double X, double Y)>();
             var relationships = new List<(string ParentId, string ChildId, string Label, string Type)>();
 
+            // Собираем идентификаторы материалов для исключения
+            var materialIds = new HashSet<string>();
             foreach (var instance in instances)
             {
-                string type = instance["type"] != null ? instance["type"].ToString() : "unknown";
+                string type = instance["type"]?.ToString() ?? "unknown";
+                if (type == "eskd_product" && instance["attributes"]?["product_type"]?.ToString() == ".MATERIAL.")
+                {
+                    string materialId = instance["id"]?.ToString();
+                    if (!string.IsNullOrEmpty(materialId))
+                    {
+                        materialIds.Add(materialId);
+                    }
+                }
+            }
+
+            foreach (var instance in instances)
+            {
+                string type = instance["type"]?.ToString() ?? "unknown";
                 var attributes = instance["attributes"] as JObject;
 
                 if (attributes != null)
@@ -78,11 +93,11 @@ namespace STEP_JSON_Application_for_ASKON
                             }
                             else if (string.IsNullOrEmpty(refDesignator))
                             {
-                                label = $"Состоит из,\nкол-во {quantityLabel} {unit}";
+                                label = "Состоит из,\nкол-во " + quantityLabel + " " + unit;
                             }
                             else
                             {
-                                label = $"Состоит из,\nпоз.{refDesignator},\nкол-во {quantityLabel} {unit}";
+                                label = "Состоит из,\nпоз." + refDesignator + ",\nкол-во " + quantityLabel + " " + unit;
                             }
                             relationships.Add((relatingId, relatedId, label, "composition"));
                         }
@@ -104,21 +119,36 @@ namespace STEP_JSON_Application_for_ASKON
                         string formationId = attributes["formation"]?.ToString();
                         if (!string.IsNullOrEmpty(defId) && !string.IsNullOrEmpty(formationId))
                         {
+                            // Проверяем, не связан ли defId с материалом
+                            var formationInstance = instances.FirstOrDefault(i => i["id"]?.ToString() == formationId);
+                            string productId = formationInstance?["attributes"]?["of_product"]?.ToString();
+                            if (!string.IsNullOrEmpty(productId) && materialIds.Contains(productId))
+                            {
+                                continue; // Пропускаем, если это материал
+                            }
                             relationships.Add((defId, formationId, "Версия", "version"));
                         }
                     }
                 }
             }
 
+            // Собираем все узлы, участвующие в связях
             var allIds = instances.Select(i => i["id"]?.ToString()).Where(id => !string.IsNullOrEmpty(id)).ToHashSet();
             var childIds = relationships.Select(r => r.ChildId).ToHashSet();
-            var rootIds = allIds.Except(childIds).ToList();
+            var parentIds = relationships.Select(r => r.ParentId).ToHashSet();
+            var connectedIds = parentIds.Union(childIds).ToHashSet(); // Узлы, которые участвуют в связях
+
+            // Корневые узлы — только те, которые участвуют в связях и не являются дочерними
+            var rootIds = connectedIds.Except(childIds).ToList();
 
             var levels = new Dictionary<int, List<(string Id, JObject Instance)>>();
             var usedIds = new HashSet<string>();
 
             void BuildTree(string id, int level)
             {
+                // Пропускаем узлы, которые не участвуют в связях
+                if (!connectedIds.Contains(id)) return;
+
                 if (!relationships.Any(r => r.ParentId == id)) return;
 
                 if (!levels.ContainsKey(level))
@@ -144,6 +174,7 @@ namespace STEP_JSON_Application_for_ASKON
             double maxCanvasWidth = 0;
             double maxCanvasHeight = 0;
 
+            // Строим основную схему
             foreach (var level in levels.OrderBy(l => l.Key))
             {
                 double levelY = level.Key * (NodeHeight + VerticalSpacing) + 20;
@@ -159,7 +190,7 @@ namespace STEP_JSON_Application_for_ASKON
                     string type = instance["type"]?.ToString() ?? "unknown";
                     string label = GetFriendlyLabel(id, instance, instances);
 
-                    var node = CreateStyledEllipse(type, label);
+                    var node = CreateStyledEllipse(type, label, false);
                     Canvas.SetLeft(node, levelX);
                     Canvas.SetTop(node, levelY);
                     schemaCanvas.Children.Add(node);
@@ -174,6 +205,7 @@ namespace STEP_JSON_Application_for_ASKON
             schemaCanvas.Width = Math.Max(schemaCanvas.Width, maxCanvasWidth + 20);
             schemaCanvas.Height = Math.Max(maxCanvasHeight + 20, schemaCanvas.Height);
 
+            // Отрисовка связей состава
             foreach (var rel in relationships)
             {
                 string parentId = rel.ParentId;
@@ -234,12 +266,8 @@ namespace STEP_JSON_Application_for_ASKON
                 {
                     Point currentPosition = e.GetPosition(scrollViewer);
                     Vector delta = currentPosition - lastMousePosition.Value;
-
-                    // Изменяем позицию прокрутки ScrollViewer
                     scrollViewer.ScrollToHorizontalOffset(scrollViewer.HorizontalOffset - delta.X);
                     scrollViewer.ScrollToVerticalOffset(scrollViewer.VerticalOffset - delta.Y);
-
-                    // Обновляем последнюю позицию мыши
                     lastMousePosition = currentPosition;
                 }
             };
@@ -280,7 +308,6 @@ namespace STEP_JSON_Application_for_ASKON
                         scaleTransform.CenterY = mousePosition.Y;
                         scaleTransform.ScaleX = newScaleX;
                         scaleTransform.ScaleY = newScaleY;
-
                         // Корректируем размеры холста после масштабирования
                         schemaCanvas.Width = maxCanvasWidth * newScaleX + 20;
                         schemaCanvas.Height = maxCanvasHeight * newScaleY + 20;
@@ -293,26 +320,19 @@ namespace STEP_JSON_Application_for_ASKON
         private string GetQuantityLabel(string quantityId, List<JObject> instances)
         {
             if (string.IsNullOrEmpty(quantityId)) return "";
-
             var quantity = instances.FirstOrDefault(i => i["id"]?.ToString() == quantityId && i["type"]?.ToString() == "measure_with_unit");
             if (quantity == null) return "";
-
-            string value = quantity["attributes"]?["value_component"]?.ToString() ?? "";
-            return value.Trim();
+            return quantity["attributes"]?["value_component"]?.ToString()?.Trim() ?? "";
         }
 
         private string GetUnitForQuantity(string quantityId, List<JObject> instances)
         {
             if (string.IsNullOrEmpty(quantityId)) return "шт.";
-
             var quantity = instances.FirstOrDefault(i => i["id"]?.ToString() == quantityId && i["type"]?.ToString() == "measure_with_unit");
             if (quantity == null) return "шт.";
-
             string unitId = quantity["attributes"]?["unit_component"]?.ToString();
             var unit = instances.FirstOrDefault(i => i["id"]?.ToString() == unitId && i["type"]?.ToString() == "context_dependent_unit");
-            string unitName = unit?["attributes"]?["id"]?.ToString() ?? "шт.";
-
-            return unitName;
+            return unit != null ? unit["attributes"]?["id"]?.ToString() ?? "шт." : "шт.";
         }
 
         private string GetFriendlyLabel(string id, JObject instance, List<JObject> instances)
@@ -328,20 +348,20 @@ namespace STEP_JSON_Application_for_ASKON
                 if (!string.IsNullOrEmpty(formationId))
                 {
                     var formation = instances.FirstOrDefault(i => i["id"]?.ToString() == formationId);
-                    string productId = formation?["attributes"]?["of_product"]?.ToString();
-                    string version = formation?["attributes"]?["id"]?.ToString() ?? "Unknown Version";
+                    string productId = formation != null ? formation["attributes"]?["of_product"]?.ToString() : null;
+                    string version = formation != null ? formation["attributes"]?["id"]?.ToString() ?? "Unknown Version" : "Unknown Version";
 
                     if (!string.IsNullOrEmpty(productId))
                     {
                         var product = instances.FirstOrDefault(i => i["id"]?.ToString() == productId);
-                        string productCode = product?["attributes"]?["id"]?.ToString() ?? "Unknown Product";
-                        string productName = product?["attributes"]?["name"]?.ToString() ?? "";
-
-                        label = $"{defId} {productCode} {productName} версия {version}".Trim();
+                        string productCode = product != null ? product["attributes"]?["id"]?.ToString() ?? "Unknown Product" : "Unknown Product";
+                        string productName = product != null ? product["attributes"]?["name"]?.ToString() ?? "" : "";
+                        label = defId + " " + productCode + " " + productName + " версия " + version;
+                        label = label.Trim();
                     }
                     else
                     {
-                        label = $"{defId} версия {version}";
+                        label = defId + " версия " + version;
                     }
                 }
                 else
@@ -353,7 +373,8 @@ namespace STEP_JSON_Application_for_ASKON
             {
                 string productCode = instance["attributes"]?["id"]?.ToString() ?? "Unknown Product";
                 string productName = instance["attributes"]?["name"]?.ToString() ?? "";
-                label = $"{productCode} {productName}".Trim();
+                label = productCode + " " + productName;
+                label = label.Trim();
             }
             else if (type == "organization")
             {
@@ -363,7 +384,7 @@ namespace STEP_JSON_Application_for_ASKON
             return label;
         }
 
-        private UIElement CreateStyledEllipse(string type, string label)
+        private UIElement CreateStyledEllipse(string type, string label, bool isMaterial)
         {
             var textBlock = new TextBlock
             {
@@ -384,6 +405,15 @@ namespace STEP_JSON_Application_for_ASKON
                 Stroke = Brushes.Black,
                 StrokeThickness = 1
             };
+
+            if (isMaterial)
+            {
+                ellipse.StrokeDashArray = new DoubleCollection { 4, 2 }; // Пунктирная обводка для материалов
+            }
+            else
+            {
+                ellipse.StrokeDashArray = null; // Сплошная обводка
+            }
 
             var container = new Canvas
             {
@@ -416,7 +446,7 @@ namespace STEP_JSON_Application_for_ASKON
 
             if (relType == "organization")
             {
-                line.StrokeDashArray = new DoubleCollection { 4, 2 };
+                line.StrokeDashArray = new DoubleCollection { 4, 2 }; // Пунктирная линия только для организаций
             }
 
             var arrow = new Polygon
