@@ -30,14 +30,12 @@ namespace STEP_JSON_Application_for_ASKON
 
             var rootNodes = new List<TreeNode>();
 
-            // Check for instances array
             if (jsonObject[InstancesKey] is JArray instances)
             {
                 rootNodes.AddRange(BuildTreeFromInstances(instances));
             }
             else
             {
-                // Fallback to generic JSON processing
                 var rootNode = new TreeNode
                 {
                     Name = "=== ДАННЫЕ ===",
@@ -55,25 +53,18 @@ namespace STEP_JSON_Application_for_ASKON
         {
             var rootNodes = new List<TreeNode>();
 
-            // Find potential root nodes (no incoming relations)
+            // Находим все ID, которые являются related_product_definition (используются в сборках)
             var referencedIds = instances
                 .Where(i => i[TypeKey]?.ToString().Contains(RelationKey) == true)
                 .Select(i => i[AttributesKey]?[RelatedKey]?.ToString())
                 .Where(id => !string.IsNullOrEmpty(id))
                 .ToHashSet();
 
+            // Корневые узлы — это только те product_definition, которые не используются как related_product_definition
             var rootCandidates = instances
                 .Where(i => !referencedIds.Contains(i[IdKey]?.ToString()) &&
-                            i[TypeKey]?.ToString().Contains("product") == true)
+                            i[TypeKey]?.ToString() == "product_definition") // Учитываем только product_definition
                 .ToList();
-
-            // If no clear root, use all product definitions or first instance
-            if (!rootCandidates.Any())
-            {
-                rootCandidates = instances
-                    .Where(i => i[TypeKey]?.ToString().Contains("product_definition") == true)
-                    .ToList();
-            }
 
             foreach (var root in rootCandidates)
             {
@@ -82,7 +73,7 @@ namespace STEP_JSON_Application_for_ASKON
                     rootNodes.Add(rootNode);
             }
 
-            // If no roots found, create a generic root
+            // Если корневые узлы не найдены, создаем резервный узел
             if (!rootNodes.Any() && instances.Any())
             {
                 var fallbackNode = new TreeNode
@@ -122,31 +113,64 @@ namespace STEP_JSON_Application_for_ASKON
                 Margin = new Thickness(0, 5, 0, 5)
             };
 
-            // Find and add components
+            // Находим все компоненты, связанные с данным продуктом
             var components = instances
                 .Where(i => i[TypeKey]?.ToString().Contains(RelationKey) == true &&
                             i[AttributesKey]?[RelatingKey]?.ToString() == productId)
+                .OrderBy(i => i[AttributesKey]?["reference_designator"]?.ToString()) // Сортируем по reference_designator
                 .ToList();
+            Console.WriteLine($"Found {components.Count} components for product {productId}");
 
+            // Обрабатываем каждый компонент
             foreach (var component in components)
             {
+                // Создаем узел компонента (например, "Поз. 1")
                 var componentNode = CreateComponentNode(component, instances);
                 if (componentNode != null)
                 {
+                    // Добавляем узел компонента в дерево
                     productNode.Children.Add(componentNode);
 
-                    // Recursively add nested products
+                    // Проверяем, есть ли связанный продукт (related_product_definition)
                     string relatedId = component[AttributesKey]?[RelatedKey]?.ToString();
                     if (!string.IsNullOrEmpty(relatedId))
                     {
                         var relatedProduct = instances.FirstOrDefault(i => i[IdKey]?.ToString() == relatedId);
                         if (relatedProduct != null)
                         {
+                            // Рекурсивно создаем узел для связанного продукта
                             var nestedNode = CreateProductNode(relatedProduct, instances);
                             if (nestedNode != null)
                                 componentNode.Children.Add(nestedNode);
                         }
                     }
+                }
+            }
+
+            // Добавляем связанные организации
+            var orgAssignments = instances
+                .Where(i => i[TypeKey]?.ToString() == "eskd_organization_product_assignment" &&
+                            i[AttributesKey]?["assigned_product"]?.ToString() == productId)
+                .ToList();
+
+            foreach (var assignment in orgAssignments)
+            {
+                string orgId = assignment[AttributesKey]?["assigned_organization"]?.ToString();
+                string roleId = assignment[AttributesKey]?["role"]?.ToString();
+                var org = instances.FirstOrDefault(i => i[IdKey]?.ToString() == orgId);
+                var role = instances.FirstOrDefault(i => i[IdKey]?.ToString() == roleId);
+
+                if (org != null)
+                {
+                    var orgNode = new TreeNode
+                    {
+                        Name = org[AttributesKey]?[NameKey]?.ToString() ?? "Организация",
+                        Value = role?[AttributesKey]?[NameKey]?.ToString() ?? "Роль неизвестна",
+                        IsExpanded = true,
+                        FontSize = 12,
+                        Margin = new Thickness(10, 2, 0, 2)
+                    };
+                    productNode.Children.Add(orgNode);
                 }
             }
 
@@ -164,10 +188,10 @@ namespace STEP_JSON_Application_for_ASKON
 
             var componentNode = new TreeNode
             {
-                Name = string.IsNullOrEmpty(refDesignator) ? "Состоит из" : $"Состоит из, поз.{refDesignator}",
-                Value = $"кол-во {quantityLabel} {unit}",
+                Name = string.IsNullOrEmpty(refDesignator) ? "Компонент" : $"Поз. {refDesignator}",
+                Value = string.IsNullOrEmpty(quantityLabel) ? "Количество неизвестно" : $"Кол-во: {quantityLabel} {unit}",
                 IsExpanded = true,
-                FontSize = 14,
+                FontSize = 12,
                 Margin = new Thickness(10, 2, 0, 2)
             };
 

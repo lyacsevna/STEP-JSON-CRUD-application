@@ -207,9 +207,7 @@
                         <TreeView.ItemTemplate>
                             <HierarchicalDataTemplate ItemsSource="{Binding Children}">
                                 <StackPanel Orientation="Horizontal">
-                                    <Image Source="{Binding ImageSource}" 
-                                           Width="20" Height="20" Margin="0,0,5,0"
-                                           Visibility="{Binding ImageSource, Converter={StaticResource NullToVisibilityConverter}}"/>
+                                    <Image Source="{Binding ImageSource}" Width="20" Height="20" Margin="0,0,5,0" Visibility="{Binding ImageSource, Converter={StaticResource NullToVisibilityConverter}}"/>
                                     <TextBlock Text="{Binding Name}" Margin="0,0,5,0"/>
                                     <TextBlock Text="{Binding Value}"/>
                                 </StackPanel>
