@@ -163,8 +163,8 @@
                 <ListBox Margin="5"
                      x:Name="LoadedFilesListBox"
                      Visibility="Collapsed"
-                     VerticalAlignment="Stretch"
-                     SelectionChanged="LoadedFilesListBox_SelectionChanged"/>
+                     VerticalAlignment="Stretch"></ListBox>
+                     <!--SelectionChanged="LoadedFilesListBox_SelectionChanged"/>-->
 
                 <TextBlock x:Name="EmptyFilesMessage" 
                        Text="Список загруженных файлов пуст, воспользуйтесь импортом" 
