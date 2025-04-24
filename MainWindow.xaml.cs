@@ -70,9 +70,6 @@ namespace STEP_JSON_Application_for_ASKON
             }
         }
 
-       
-
-        #region Вспомогательные методы
 
 
         public void TestValidButton_Click(object sender, RoutedEventArgs e)
@@ -128,16 +125,8 @@ namespace STEP_JSON_Application_for_ASKON
             return null;
         }
 
-        private void StepJsonTextBox_TextChanged(object sender, EventArgs e)
-        {
-            if (StepJsonTextBox.Text != lastText)
-            {
-                undoStack.Push(lastText);
-                lastText = StepJsonTextBox.Text;
-            }
-        }
+        
 
-        #endregion
 
         #region Вкладка в меню - ФАЙЛ (создать, открыть и т.д)
 
@@ -317,17 +306,24 @@ namespace STEP_JSON_Application_for_ASKON
         {
             if (undoStack.Count > 1)
             {
-                StepJsonTextBox.TextChanged -= StepJsonTextBox_TextChanged;
+                StepJsonTextBox.TextChanged -= UpdateUndoStackOnTextChange;
 
                 undoStack.Pop();
                 StepJsonTextBox.Text = undoStack.Peek();
 
                 lastText = StepJsonTextBox.Text;
 
-                StepJsonTextBox.TextChanged += StepJsonTextBox_TextChanged;
+                StepJsonTextBox.TextChanged += UpdateUndoStackOnTextChange;
             }
         }
-
+        private void UpdateUndoStackOnTextChange(object sender, EventArgs e)
+        {
+            if (StepJsonTextBox.Text != lastText)
+            {
+                undoStack.Push(lastText);
+                lastText = StepJsonTextBox.Text;
+            }
+        }
         private void DeleteButton_Click(object sender, RoutedEventArgs e)
         {
             if (StepJsonTextBox != null)

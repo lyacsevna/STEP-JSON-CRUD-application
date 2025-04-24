@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Management.Automation;
 using System.Windows;
+using System.Windows.Controls;
 
 namespace STEP_JSON_Application_for_ASKON
 {
@@ -50,19 +51,27 @@ namespace STEP_JSON_Application_for_ASKON
 
             LoadAndProcessJsonFile(selectedFilePath);
         }
-
         public void LoadAndProcessJsonFile(string filePath)
         {
-            
             string fileContent = ReadFileContent(filePath);
             if (fileContent == null) return;
 
-            ProcessJsonFile(fileContent);
+            // Обработка JSON файла, даже если есть ошибки
+            string errorDescription = string.Empty;
+            string processedContent = AddErrorCommentsToJson(fileContent, out errorDescription);
 
+            // Обновляем интерфейс, даже если есть ошибки
+            UpdateUIAfterFileLoad(processedContent, errorDescription);
+
+            // Обновляем дерево и список загруженных файлов
+            //UpdateTreeView(processedContent); // Передаем обработанный контент
             UpdateLoadedFilesList(filePath);
+
+            // Устанавливаем currentFilePath после загрузки файла
+            currentFilePath = filePath;
         }
 
-            #region Методы, вызываемые LoadAndProcessJsonFile
+        #region Методы, вызываемые LoadAndProcessJsonFile
         private string ReadFileContent(string filePath)
         {
             try
@@ -178,32 +187,72 @@ namespace STEP_JSON_Application_for_ASKON
 
         private void UpdateLoadedFilesList(string filePath)
         {
-            
             mainWindow.LoadedFilesListBox.Items.Add(System.IO.Path.GetFileName(filePath));
             loadedFilePaths.Add(filePath);
             mainWindow.DefaultFileNameTextBlock.Text = filePath;
 
-            
             bool hasFiles = mainWindow.LoadedFilesListBox.Items.Count > 0;
             mainWindow.EmptyFilesMessage.Visibility = hasFiles ? Visibility.Collapsed : Visibility.Visible;
             mainWindow.LoadedFilesListBox.Visibility = hasFiles ? Visibility.Visible : Visibility.Collapsed;
         }
 
 
+        public void LoadedFilesListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (mainWindow.LoadedFilesListBox.SelectedItem is string selectedFileName)
+            {
+                string selectedFilePath = GetSelectedFilePath(selectedFileName);
+
+                
+                if (!string.IsNullOrEmpty(selectedFilePath))
+                {
+                    try
+                    {
+                        LoadAndProcessJsonFile(selectedFilePath);
+                    }
+                    catch (Exception ex)
+                    {
+                        
+                        MessageBox.Show($"Ошибка при загрузке файла: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+            }
+        }
+
+        private string GetSelectedFilePath(string selectedFileName)
+        {
+            try
+            {
+                int index = mainWindow.LoadedFilesListBox.Items.IndexOf(selectedFileName);
+                if (index >= 0 && index < loadedFilePaths.Count)
+                {
+                    return loadedFilePaths[index];
+                }
+                else
+                {
+                    MessageBox.Show("Выбранный файл не найден в списке загруженных файлов.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+            }
+            catch (Exception ex)
+            {
+                
+                MessageBox.Show($"Ошибка при получении пути к файлу: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            return null;
+        }
 
 
 
+        #endregion
 
-            #endregion
-        
         #endregion
 
 
         #region Сохранение файла
 
+
         public void SaveFile(string action)
         {
-           
             Microsoft.Win32.SaveFileDialog saveFileDialog = new Microsoft.Win32.SaveFileDialog
             {
                 Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*"
@@ -211,7 +260,6 @@ namespace STEP_JSON_Application_for_ASKON
 
             try
             {
-                
                 if (action == "Сохранить")
                 {
                     if (!string.IsNullOrEmpty(currentFilePath))
@@ -224,15 +272,18 @@ namespace STEP_JSON_Application_for_ASKON
                         if (saveFileDialog.ShowDialog() == true)
                         {
                             SaveToFile(saveFileDialog.FileName);
+                            currentFilePath = saveFileDialog.FileName;
+                            UpdateLoadedFilesList(currentFilePath); 
                         }
                     }
                 }
-                
                 else if (action == "Сохранить как")
                 {
                     if (saveFileDialog.ShowDialog() == true)
                     {
                         SaveToFile(saveFileDialog.FileName);
+                        currentFilePath = saveFileDialog.FileName;
+                        UpdateLoadedFilesList(currentFilePath);
                     }
                 }
             }
@@ -242,13 +293,26 @@ namespace STEP_JSON_Application_for_ASKON
             }
         }
 
-        
         private void SaveToFile(string filePath)
         {
-            File.WriteAllText(filePath, mainWindow.StepJsonTextBox.Text);
-            currentFilePath = filePath;
-            MessageBox.Show("Файл успешно сохранен.", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+            try
+            {
+                string contentToSave = GetContentToSave();
+                File.WriteAllText(filePath, contentToSave);
+                MessageBox.Show("Файл успешно сохранен.", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при записи файла: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
+
+        private string GetContentToSave()
+        {
+            return mainWindow.StepJsonTextBox.Text; 
+        }
+
+   
 
 
         #endregion
