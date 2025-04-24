@@ -122,5 +122,8 @@
   <ItemGroup>
     <Resource Include="StaticFiles\jsonLogoForMenu.png" />
   </ItemGroup>
+  <ItemGroup>
+    <Resource Include="StaticFiles\updateFileGIF.gif" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

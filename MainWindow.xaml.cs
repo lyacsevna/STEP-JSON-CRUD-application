@@ -17,7 +17,7 @@ namespace STEP_JSON_Application_for_ASKON
 
         #region Поля
 
-        private string currentFilePath = string.Empty;
+        
         private double scale = 1.0; // Текущий масштаб
         private const double ScaleRate = 0.1; // Шаг изменения масштаба
 
@@ -48,7 +48,6 @@ namespace STEP_JSON_Application_for_ASKON
 
         #endregion
 
-
         private void SchemaCanvas_MouseWheel(object sender, MouseWheelEventArgs e)
         {
             if (Keyboard.Modifiers == ModifierKeys.Control) // Проверяем, нажат ли Ctrl
@@ -71,155 +70,19 @@ namespace STEP_JSON_Application_for_ASKON
             }
         }
 
-        private void ImportButton_Click(object sender, RoutedEventArgs e)
-        {
-            jsonManager.SelectJsonFile();
-        }
-
-        private void SaveFile(string action)
-        {
-            Microsoft.Win32.SaveFileDialog saveFileDialog = new Microsoft.Win32.SaveFileDialog
-            {
-                Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*"
-            };
-
-            if (action == "Сохранить")
-            {
-                if (!string.IsNullOrEmpty(currentFilePath))
-                {
-                    File.WriteAllText(currentFilePath, StepJsonTextBox.Text);
-                    MessageBox.Show("Файл успешно сохранен.", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-                else
-                {
-                    MessageBox.Show("Сначала используйте 'Сохранить как' для выбора пути.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
-                }
-            }
-            else if (action == "Сохранить как")
-            {
-                if (saveFileDialog.ShowDialog() == true)
-                {
-                    string filePath = saveFileDialog.FileName;
-                    File.WriteAllText(filePath, StepJsonTextBox.Text);
-                    currentFilePath = filePath;
-
-                    MessageBox.Show("Файл успешно сохранен.", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-            }
-        }
-
-
-
+       
 
         #region Вспомогательные методы
-        
 
-        private void TestValidButton_Click(object sender, RoutedEventArgs e)
+
+        public void TestValidButton_Click(object sender, RoutedEventArgs e)
         {
-            string jsonContent = StepJsonTextBox.Text;
-
-            // Проверяем синтаксис JSON и получаем возможные ошибки
-            string processedContent = AddErrorCommentsToJson(jsonContent, out string errorDescription);
-
-            // Обновляем интерфейс в зависимости от наличия ошибок
-            if (!string.IsNullOrEmpty(errorDescription))
-            {
-                ErrorJSONTextBox.Text = errorDescription;
-                ErrorJSONTextBox.Visibility = Visibility.Visible;
-                // Очищаем TreeView и Canvas, так как есть ошибки
-                TextTabTreeView.Items.Clear();
-                SchemaCanvas.Children.Clear();
-            }
-            else
-            {
-                ErrorJSONTextBox.Visibility = Visibility.Collapsed;
-
-                // Если ошибок нет, парсим JSON и обновляем TreeView и Canvas
-                try
-                {
-                    var jsonObject = JObject.Parse(processedContent);
-                    var treeNodes = treeManager.FormatJsonObject(jsonObject);
-
-                    // Очищаем предыдущие элементы
-                    TextTabTreeView.Items.Clear();
-                    SchemaCanvas.Children.Clear();
-                    ErrorPanel.Visibility = Visibility.Collapsed;
-
-                    // Добавляем новые элементы в TreeView
-                    foreach (var node in treeNodes)
-                    {
-                        TextTabTreeView.Items.Add(node);
-                    }
-
-                    // Раскрываем все элементы дерева
-                    treeManager.ExpandAllTreeViewItems(TextTabTreeView);
-                    // Генерируем схему
-                    schemaManager.GenerateSchema(jsonObject, SchemaCanvas);
-                }
-                catch (JsonReaderException ex)
-                {
-                    MessageBox.Show($"Ошибка при десериализации JSON: {ex.Message}\n" +
-                                    $"Строка: {ex.LineNumber}, Позиция: {ex.LinePosition}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Ошибка: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
+            string filePath = DefaultFileNameTextBlock.Text;
+            string fileContent = StepJsonTextBox.Text;
+            jsonManager.ProcessJsonFile(fileContent);
         } 
 
-        private string AddErrorCommentsToJson(string jsonContent, out string errorDescription) //сделать для множества ошибок
-        {
-            errorDescription = string.Empty;
-            var errors = new List<string>();
 
-            if (string.IsNullOrEmpty(jsonContent))
-            {
-                errorDescription = "JSON контент не может быть пустым.";
-                return jsonContent;
-            }
-            try
-            {
-                JToken.Parse(jsonContent);
-            }
-            catch (JsonReaderException ex)
-            {
-                errorDescription = $"Ошибка синтаксиса JSON: {ex.Message}\nСтрока: {ex.LineNumber}, Позиция: {ex.LinePosition}";
-                return jsonContent;
-            }
-
-            using (var reader = new JsonTextReader(new StringReader(jsonContent)))
-            {
-                while (true)
-                {
-                    try
-                    {
-                        if (!reader.Read())
-                            break;
-                    }
-                    catch (JsonReaderException ex)
-                    {
-                        var errorMessage = $"Ошибка парсинга JSON: {ex.Message}\nСтрока: {ex.LineNumber}, Позиция: {ex.LinePosition}";
-                        errors.Add(errorMessage);
-                        reader.Skip();
-                        continue;
-                    }
-                    catch (Exception ex)
-                    {
-                        var errorMessage = $"Необработанная ошибка: {ex.Message}";
-                        errors.Add(errorMessage);
-                        break;
-                    }
-                }
-            }
-
-            if (errors.Count > 0)
-            {
-                errorDescription = string.Join("\n", errors);
-            }
-
-            return jsonContent;
-        }
 
         private void LoadedFilesListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -277,6 +140,12 @@ namespace STEP_JSON_Application_for_ASKON
         #endregion
 
         #region Вкладка в меню - ФАЙЛ (создать, открыть и т.д)
+
+        private void ImportButton_Click(object sender, RoutedEventArgs e)
+        {
+            jsonManager.OpenAndLoadUniqueJsonFile();
+        }
+
         private void CreateNewFile_Click(object sender, RoutedEventArgs e)
         {
             Microsoft.Win32.SaveFileDialog saveFileDialog = new Microsoft.Win32.SaveFileDialog
@@ -402,19 +271,14 @@ namespace STEP_JSON_Application_for_ASKON
             }
         }
 
-        private void OpenFile_Click(object sender, RoutedEventArgs e)
-        {
-            ImportButton_Click(sender, e);
-        }
-
         private void SaveFile_Click(object sender, RoutedEventArgs e)
         {
-            SaveFile("Сохранить");
+            jsonManager.SaveFile("Сохранить");
         }
 
         private void SaveAsFile_Click(object sender, RoutedEventArgs e)
         {
-            SaveFile("Сохранить как");
+            jsonManager.SaveFile("Сохранить как");
         }
 
         private void Exit_Click(object sender, RoutedEventArgs e)

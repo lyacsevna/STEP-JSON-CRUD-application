@@ -18,6 +18,7 @@ namespace STEP_JSON_Application_for_ASKON
         private static readonly SchemaManager schemaManager = new SchemaManager();
         internal readonly object loadedFilePathss;
         private MainWindow mainWindow;
+        private string currentFilePath;
 
         public JsonManager(MainWindow mainWindow)
         {
@@ -25,73 +26,43 @@ namespace STEP_JSON_Application_for_ASKON
         }
 
         #region Импорт файла
-        public void SelectJsonFile()
+        public void OpenAndLoadUniqueJsonFile()
         {
-            string filePath = GetJsonFilePath();
-
-            if (!string.IsNullOrEmpty(filePath))
+            
+            var openFileDialog = new Microsoft.Win32.OpenFileDialog
             {
-                IsFileAlreadyLoaded(filePath);
-            }
-            else
-            {
-                MessageBox.Show("Файл не был выбран.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
-            }
-
-        }
-
-        public string GetJsonFilePath()
-        {
-            Microsoft.Win32.OpenFileDialog openFileDialog = new Microsoft.Win32.OpenFileDialog
-            {
-                Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*"
+                Filter = "JSON файлы (*.json)|*.json|Все файлы (*.*)|*.*"
             };
 
-            if (openFileDialog.ShowDialog() == true)
+            if (openFileDialog.ShowDialog() != true || string.IsNullOrEmpty(openFileDialog.FileName))
             {
-                return openFileDialog.FileName;
+                MessageBox.Show("Файл не был выбран.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
             }
-            else return null;
-        }
+           
+            string selectedFilePath = openFileDialog.FileName;
 
-        private void IsFileAlreadyLoaded(string filePath)
-        {
-            if (loadedFilePaths.Contains(filePath))
+            if (loadedFilePaths.Contains(selectedFilePath))
             {
                 MessageBox.Show("Этот файл уже был загружен.", "Предупреждение", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
-            else
-            {
-                LoadAndProcessJsonFile(filePath);
-            }
 
+            LoadAndProcessJsonFile(selectedFilePath);
         }
 
-        private void LoadAndProcessJsonFile(string filePath)
+        public void LoadAndProcessJsonFile(string filePath)
         {
-            // Шаг 1: Чтение содержимого файла
+            
             string fileContent = ReadFileContent(filePath);
             if (fileContent == null) return;
 
-            // Шаг 2: Добавление комментариев об ошибках в JSON
-            string errorDescription;
-            string processedContent = AddErrorCommentsToJson(fileContent, out errorDescription);
+            ProcessJsonFile(fileContent);
 
-            // Шаг 3: Обновление интерфейса после загрузки файла
-            UpdateUIAfterFileLoad(processedContent, errorDescription);
-
-            // Шаг 4: Попытка обработать JSON
-            if (TryProcessJson(processedContent, out JObject jsonObject))
-            {
-                // Шаг 5: Обновление дерева представления
-                UpdateTreeView(jsonObject);
-            }
-
-            // Шаг 6: Обновление списка загруженных файлов
             UpdateLoadedFilesList(filePath);
         }
 
+            #region Методы, вызываемые LoadAndProcessJsonFile
         private string ReadFileContent(string filePath)
         {
             try
@@ -103,6 +74,39 @@ namespace STEP_JSON_Application_for_ASKON
                 MessageBox.Show($"Ошибка при чтении файла: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                 return null;
             }
+        }
+
+        public void ProcessJsonFile(string jsonContent)
+        {
+            
+            string errorDescription;
+            string processedContent = AddErrorCommentsToJson(jsonContent, out errorDescription);
+
+            if (TryConvertJsonToJObject(processedContent, out JObject jsonObject))
+            {
+                UpdateUIAfterFileLoad(processedContent, errorDescription);
+                UpdateTreeView(jsonObject);
+
+            }
+        }
+
+        public string AddErrorCommentsToJson(string jsonContent, out string errorDescription)
+        {
+            errorDescription = string.Empty;
+            var errors = new List<string>();
+
+            if (string.IsNullOrEmpty(jsonContent))
+            {
+                errorDescription = "JSON контент не может быть пустым.";
+                return jsonContent;
+            }
+
+            if (!TryValidateJsonSyntax(jsonContent, errors))
+            {
+                errorDescription = string.Join("\n", errors);
+            }
+
+            return jsonContent;
         }
 
         private void UpdateUIAfterFileLoad(string processedContent, string errorDescription)
@@ -122,7 +126,7 @@ namespace STEP_JSON_Application_for_ASKON
             }
         }
 
-        private bool TryProcessJson(string processedContent, out JObject jsonObject)
+        private bool TryConvertJsonToJObject(string processedContent, out JObject jsonObject)
         {
             try
             {
@@ -143,6 +147,20 @@ namespace STEP_JSON_Application_for_ASKON
             return false;
         }
 
+        private bool TryValidateJsonSyntax(string jsonContent, List<string> errors)
+        {
+            try
+            {
+                JToken.Parse(jsonContent);
+                return true;
+            }
+            catch (JsonReaderException ex)
+            {
+                errors.Add($"Ошибка синтаксиса JSON: {ex.Message}\nСтрока: {ex.LineNumber}, Позиция: {ex.LinePosition}");
+            }
+            return false;
+        }
+
         private void UpdateTreeView(JObject jsonObject)
         {
             var treeNodes = treeManager.FormatJsonObject(jsonObject);
@@ -160,55 +178,78 @@ namespace STEP_JSON_Application_for_ASKON
 
         private void UpdateLoadedFilesList(string filePath)
         {
-            mainWindow  .LoadedFilesListBox.Items.Add(System.IO.Path.GetFileName(filePath));
+            
+            mainWindow.LoadedFilesListBox.Items.Add(System.IO.Path.GetFileName(filePath));
             loadedFilePaths.Add(filePath);
             mainWindow.DefaultFileNameTextBlock.Text = filePath;
-            UpdateLoadedFilesListVisibility();
+
+            
+            bool hasFiles = mainWindow.LoadedFilesListBox.Items.Count > 0;
+            mainWindow.EmptyFilesMessage.Visibility = hasFiles ? Visibility.Collapsed : Visibility.Visible;
+            mainWindow.LoadedFilesListBox.Visibility = hasFiles ? Visibility.Visible : Visibility.Collapsed;
         }
 
-        private void UpdateLoadedFilesListVisibility()
-        {
-            mainWindow.EmptyFilesMessage.Visibility = mainWindow.LoadedFilesListBox.Items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-            mainWindow.LoadedFilesListBox.Visibility = mainWindow.LoadedFilesListBox.Items.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
-        }
 
-        private string AddErrorCommentsToJson(string jsonContent, out string errorDescription)
-        {
-            errorDescription = string.Empty;
-            var errors = new List<string>();
 
-            if (string.IsNullOrEmpty(jsonContent))
-            {
-                errorDescription = "JSON контент не может быть пустым.";
-                return jsonContent;
-            }
 
-            if (!TryParseJson(jsonContent, errors))
-            {
-                errorDescription = string.Join("\n", errors);
-            }
 
-            return jsonContent;
-        }
 
-        private bool TryParseJson(string jsonContent, List<string> errors)
-        {
-            try
-            {
-                JToken.Parse(jsonContent);
-                return true;
-            }
-            catch (JsonReaderException ex)
-            {
-                errors.Add($"Ошибка синтаксиса JSON: {ex.Message}\nСтрока: {ex.LineNumber}, Позиция: {ex.LinePosition}");
-            }
-            return false;
-        }
-
+            #endregion
+        
         #endregion
 
 
         #region Сохранение файла
+
+        public void SaveFile(string action)
+        {
+           
+            Microsoft.Win32.SaveFileDialog saveFileDialog = new Microsoft.Win32.SaveFileDialog
+            {
+                Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*"
+            };
+
+            try
+            {
+                
+                if (action == "Сохранить")
+                {
+                    if (!string.IsNullOrEmpty(currentFilePath))
+                    {
+                        SaveToFile(currentFilePath);
+                    }
+                    else
+                    {
+                        MessageBox.Show("Сначала используйте 'Сохранить как' для выбора пути.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        if (saveFileDialog.ShowDialog() == true)
+                        {
+                            SaveToFile(saveFileDialog.FileName);
+                        }
+                    }
+                }
+                
+                else if (action == "Сохранить как")
+                {
+                    if (saveFileDialog.ShowDialog() == true)
+                    {
+                        SaveToFile(saveFileDialog.FileName);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при сохранении файла: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        
+        private void SaveToFile(string filePath)
+        {
+            File.WriteAllText(filePath, mainWindow.StepJsonTextBox.Text);
+            currentFilePath = filePath;
+            MessageBox.Show("Файл успешно сохранен.", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
 
         #endregion
     }
