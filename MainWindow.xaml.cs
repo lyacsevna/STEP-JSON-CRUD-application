@@ -43,21 +43,12 @@ namespace STEP_JSON_Application_for_ASKON
             // Применяем ScaleTransform к SchemaCanvas
             SchemaCanvas.RenderTransform = new ScaleTransform(scale, scale);
 
-            jsonManager = new JsonManager();
+            jsonManager = new JsonManager(this);
         }
 
         #endregion
 
 
-
-
-
-
-
-
-
-
-        #region Обработчики событий
         private void SchemaCanvas_MouseWheel(object sender, MouseWheelEventArgs e)
         {
             if (Keyboard.Modifiers == ModifierKeys.Control) // Проверяем, нажат ли Ctrl
@@ -84,13 +75,6 @@ namespace STEP_JSON_Application_for_ASKON
         {
             jsonManager.SelectJsonFile();
         }
-
-
-
-
-        #endregion
-
-
 
         private void SaveFile(string action)
         {

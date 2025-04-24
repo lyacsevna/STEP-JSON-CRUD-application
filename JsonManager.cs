@@ -13,14 +13,16 @@ namespace STEP_JSON_Application_for_ASKON
 
 
         private List<string> loadedFilePaths = new List<string>();
-        private MainWindow mainWindow;
+        
         private static readonly TreeManager treeManager = new TreeManager();
         private static readonly SchemaManager schemaManager = new SchemaManager();
+        private MainWindow mainWindow;
 
-        public JsonManager(/*MainWindow mainWindow*/)
+        public JsonManager(MainWindow mainWindow)
         {
-            //this.mainWindow = mainWindow ?? throw new ArgumentNullException(nameof(mainWindow));
+            this.mainWindow = mainWindow ?? throw new ArgumentNullException(nameof(MainWindow));
         }
+
 
         public void SelectJsonFile()
         {
@@ -69,7 +71,7 @@ namespace STEP_JSON_Application_for_ASKON
         {
             // Шаг 1: Чтение содержимого файла
             string fileContent = ReadFileContent(filePath);
-            if (fileContent == null) return; // Завершить, если чтение не удалось
+            if (fileContent == null) return;
 
             // Шаг 2: Добавление комментариев об ошибках в JSON
             string errorDescription;
@@ -89,8 +91,6 @@ namespace STEP_JSON_Application_for_ASKON
             UpdateLoadedFilesList(filePath);
         }
 
-
-
         private string ReadFileContent(string filePath)
         {
             try
@@ -104,15 +104,8 @@ namespace STEP_JSON_Application_for_ASKON
             }
         }
 
-
         private void UpdateUIAfterFileLoad(string processedContent, string errorDescription)
         {
-
-            if (mainWindow == null)
-            {
-                MessageBox.Show("Ошибка: mainWindow не инициализирован.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
 
             mainWindow.SelectFileTextBlock.Visibility = Visibility.Collapsed;
             mainWindow.StepJsonTextBox.Text = processedContent;
@@ -123,7 +116,7 @@ namespace STEP_JSON_Application_for_ASKON
                 mainWindow.ErrorPanel.Visibility = Visibility.Visible;
             }
             else
-            {
+            {   
                 mainWindow.ErrorPanel.Visibility = Visibility.Collapsed;
             }
         }
@@ -156,6 +149,8 @@ namespace STEP_JSON_Application_for_ASKON
             mainWindow.SchemaCanvas.Children.Clear();
 
             foreach (var node in treeNodes)
+            {
+                mainWindow.TextTabTreeView.Items.Add(node);
             }
 
             treeManager.ExpandAllTreeViewItems(mainWindow.TextTabTreeView);
@@ -164,7 +159,7 @@ namespace STEP_JSON_Application_for_ASKON
 
         private void UpdateLoadedFilesList(string filePath)
         {
-            mainWindow.LoadedFilesListBox.Items.Add(System.IO.Path.GetFileName(filePath));
+            mainWindow  .LoadedFilesListBox.Items.Add(System.IO.Path.GetFileName(filePath));
             loadedFilePaths.Add(filePath);
             mainWindow.DefaultFileNameTextBlock.Text = filePath;
             UpdateLoadedFilesListVisibility();
