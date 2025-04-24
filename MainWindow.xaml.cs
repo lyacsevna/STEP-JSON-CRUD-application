@@ -36,7 +36,7 @@ namespace STEP_JSON_Application_for_ASKON
         public MainWindow()
         {
             InitializeComponent();
-            undoStack.Push(lastText); //для обработки кнопки возврата изменений
+            undoStack.Push(lastText); 
 
             // Подключаем обработчик события MouseWheel к SchemaCanvas
             SchemaCanvas.MouseWheel += SchemaCanvas_MouseWheel;
@@ -166,7 +166,7 @@ namespace STEP_JSON_Application_for_ASKON
                     MessageBox.Show($"Ошибка: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
-        }
+        } 
 
         private string AddErrorCommentsToJson(string jsonContent, out string errorDescription) //сделать для множества ошибок
         {
@@ -221,49 +221,50 @@ namespace STEP_JSON_Application_for_ASKON
             return jsonContent;
         }
 
-        //private void LoadedFilesListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        //{
-        //    if (LoadedFilesListBox.SelectedItem is string selectedFileName)
-        //    {
-        //        string selectedFilePath = GetSelectedFilePath(selectedFileName);
+        private void LoadedFilesListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (LoadedFilesListBox.SelectedItem is string selectedFileName)
+            {
+                string selectedFilePath = GetSelectedFilePath(selectedFileName);
 
-        //        if (!string.IsNullOrEmpty(selectedFilePath))
-        //        {
-        //            string fileContent = File.ReadAllText(selectedFilePath);
-        //            StepJsonTextBox.Text = fileContent;
+                if (!string.IsNullOrEmpty(selectedFilePath))
+                {
+                    string fileContent = File.ReadAllText(selectedFilePath);
+                    StepJsonTextBox.Text = fileContent;
 
-        //            var jsonObject = JObject.Parse(fileContent);
-        //            var treeNodes = treeManager.FormatJsonObject(jsonObject);
+                    var jsonObject = JObject.Parse(fileContent);
+                    var treeNodes = treeManager.FormatJsonObject(jsonObject);
 
-        //            TextTabTreeView.Items.Clear();
-        //            SchemaCanvas.Children.Clear();
-        //            foreach (var node in treeNodes)
-        //            {
-        //                TextTabTreeView.Items.Add(node);
-        //            }
+                    TextTabTreeView.Items.Clear();
+                    SchemaCanvas.Children.Clear();
+                    foreach (var node in treeNodes)
+                    {
+                        TextTabTreeView.Items.Add(node);
+                    }
 
-        //            treeManager.ExpandAllTreeViewItems(TextTabTreeView);
-        //            schemaManager.GenerateSchema(jsonObject, SchemaCanvas);
-        //            DefaultFileNameTextBlock.Text = selectedFilePath;
-        //        }
-        //    }
-        //}
-        //private string GetSelectedFilePath(string selectedFileName)
-        //{
-        //    try
-        //    {
-        //        int index = LoadedFilesListBox.Items.IndexOf(selectedFileName);
-        //        if (index >= 0 && index < loadedFilePaths.Count)
-        //        {
-        //            return loadedFilePaths[index];
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        MessageBox.Show($"Ошибка при получении пути к файлу: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-        //    }
-        //    return null;
-        //}
+                    treeManager.ExpandAllTreeViewItems(TextTabTreeView);
+                    schemaManager.GenerateSchema(jsonObject, SchemaCanvas);
+                    DefaultFileNameTextBlock.Text = selectedFilePath;
+                }
+            }
+        }
+        private string GetSelectedFilePath(string selectedFileName)
+        {
+            try
+            {
+                int index = LoadedFilesListBox.Items.IndexOf(selectedFileName);
+                if (index >= 0 && index < jsonManager.loadedFilePaths.Count)
+                {
+                    return jsonManager.loadedFilePaths[index];
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при получении пути к файлу: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            return null;
+        }
+
         private void StepJsonTextBox_TextChanged(object sender, EventArgs e)
         {
             if (StepJsonTextBox.Text != lastText)
@@ -273,10 +274,6 @@ namespace STEP_JSON_Application_for_ASKON
             }
         }
 
-        private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e) //РЕАЛИЗОВАТЬ
-        {
-
-        }
         #endregion
 
         #region Вкладка в меню - ФАЙЛ (создать, открыть и т.д)

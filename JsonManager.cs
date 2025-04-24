@@ -12,10 +12,11 @@ namespace STEP_JSON_Application_for_ASKON
     {
 
 
-        private List<string> loadedFilePaths = new List<string>();
+        public List<string> loadedFilePaths = new List<string>();
         
         private static readonly TreeManager treeManager = new TreeManager();
         private static readonly SchemaManager schemaManager = new SchemaManager();
+        internal readonly object loadedFilePathss;
         private MainWindow mainWindow;
 
         public JsonManager(MainWindow mainWindow)
@@ -23,7 +24,7 @@ namespace STEP_JSON_Application_for_ASKON
             this.mainWindow = mainWindow ?? throw new ArgumentNullException(nameof(MainWindow));
         }
 
-
+        #region Импорт файла
         public void SelectJsonFile()
         {
             string filePath = GetJsonFilePath();
@@ -204,6 +205,12 @@ namespace STEP_JSON_Application_for_ASKON
             return false;
         }
 
+        #endregion
+
+
+        #region Сохранение файла
+
+        #endregion
     }
 
 }
