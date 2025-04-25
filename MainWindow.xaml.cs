@@ -23,7 +23,7 @@ namespace STEP_JSON_Application_for_ASKON
 
        
         private static readonly Stack<string> stack = new Stack<string>();
-        private Stack<string> undoStack = stack;
+        private readonly Stack<string> undoStack = stack;
         private string lastText = string.Empty;
 
         private readonly JsonManager jsonManager;
@@ -72,67 +72,25 @@ namespace STEP_JSON_Application_for_ASKON
 
 
 
-        public void TestValidButton_Click(object sender, RoutedEventArgs e)
+        public void TestValidButton_Click(object sender, RoutedEventArgs e) 
         {
-            string filePath = DefaultFileNameTextBlock.Text;
+            string selectedfilePath = DefaultFileNameTextBlock.Text;
             string fileContent = StepJsonTextBox.Text;
-            jsonManager.ProcessJsonFile(fileContent);
+            jsonManager.ProcessJsonFile(fileContent, selectedfilePath);
         } 
 
 
 
         private void LoadedFilesListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (LoadedFilesListBox.SelectedItem is string selectedFileName)
-            {
-                string selectedFilePath = GetSelectedFilePath(selectedFileName);
-
-                if (!string.IsNullOrEmpty(selectedFilePath))
-                {
-                    string fileContent = File.ReadAllText(selectedFilePath);
-                    StepJsonTextBox.Text = fileContent;
-
-                    var jsonObject = JObject.Parse(fileContent);
-                    var treeNodes = treeManager.FormatJsonObject(jsonObject);
-
-                    TextTabTreeView.Items.Clear();
-                    SchemaCanvas.Children.Clear();
-                    foreach (var node in treeNodes)
-                    {
-                        TextTabTreeView.Items.Add(node);
-                    }
-
-                    treeManager.ExpandAllTreeViewItems(TextTabTreeView);
-                    schemaManager.GenerateSchema(jsonObject, SchemaCanvas);
-                    DefaultFileNameTextBlock.Text = selectedFilePath;
-                }
-            }
+            jsonManager.DisplaySelectedFileContent( sender, e);
         }
-        private string GetSelectedFilePath(string selectedFileName)
-        {
-            try
-            {
-                int index = LoadedFilesListBox.Items.IndexOf(selectedFileName);
-                if (index >= 0 && index < jsonManager.loadedFilePaths.Count)
-                {
-                    return jsonManager.loadedFilePaths[index];
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Ошибка при получении пути к файлу: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-            return null;
-        }
-
-        
-
 
         #region Вкладка в меню - ФАЙЛ (создать, открыть и т.д)
 
         private void ImportButton_Click(object sender, RoutedEventArgs e)
         {
-            jsonManager.OpenAndLoadUniqueJsonFile();
+            jsonManager.ImportJsonFile();
         }
 
         private void CreateNewFile_Click(object sender, RoutedEventArgs e)
@@ -316,6 +274,7 @@ namespace STEP_JSON_Application_for_ASKON
                 StepJsonTextBox.TextChanged += UpdateUndoStackOnTextChange;
             }
         }
+
         private void UpdateUndoStackOnTextChange(object sender, EventArgs e)
         {
             if (StepJsonTextBox.Text != lastText)
@@ -324,6 +283,7 @@ namespace STEP_JSON_Application_for_ASKON
                 lastText = StepJsonTextBox.Text;
             }
         }
+
         private void DeleteButton_Click(object sender, RoutedEventArgs e)
         {
             if (StepJsonTextBox != null)
