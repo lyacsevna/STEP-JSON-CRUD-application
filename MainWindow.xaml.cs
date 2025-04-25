@@ -74,9 +74,9 @@ namespace STEP_JSON_Application_for_ASKON
 
         public void TestValidButton_Click(object sender, RoutedEventArgs e) 
         {
-            string selectedfilePath = DefaultFileNameTextBlock.Text;
+            string filePath = DefaultFileNameTextBlock.Text;
             string fileContent = StepJsonTextBox.Text;
-            jsonManager.ProcessJsonFile(fileContent, selectedfilePath);
+            jsonManager.TestValidCurrentFileContent(fileContent,filePath);
         } 
 
 

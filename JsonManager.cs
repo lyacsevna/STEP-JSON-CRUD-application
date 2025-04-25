@@ -81,7 +81,7 @@ namespace STEP_JSON_Application_for_ASKON
 
             string processedContent = AddErrorCommentsToJson(fileContent, errorDescription);
 
-            
+            UpdateInterface(processedContent, isValidJson ? string.Empty : errorDescription, selectedFilePath);
 
             if (isValidJson && TryConvertJsonToJObject(processedContent, out JObject jsonObject))
             {
@@ -95,6 +95,24 @@ namespace STEP_JSON_Application_for_ASKON
                 ShowError(errorDescription);
             }
         }
+        public void TestValidCurrentFileContent (string fileContent, string filePat)
+        {
+            string errorDescription;
+            bool isValidJson = TryValidateJsonSyntax(fileContent, out errorDescription);
+
+            string processedContent = AddErrorCommentsToJson(fileContent, errorDescription);
+            ClearPreviousData();
+            if (isValidJson && TryConvertJsonToJObject(processedContent, out JObject jsonObject))
+            {
+                
+                UpdateTreeViewFromJson(processedContent);
+            }
+            else
+            {
+                ShowError(errorDescription);
+            }
+        } 
+        
 
         private bool TryConvertJsonToJObject(string processedContent, out JObject jsonObject)
         {
@@ -226,8 +244,7 @@ namespace STEP_JSON_Application_for_ASKON
         }
 
 
-       
-
+      
         private void UpdateLoadedFilesList(string filePath)
         {
             mainWindow.LoadedFilesListBox.Items.Add(System.IO.Path.GetFileName(filePath));
