@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,23 +17,54 @@ namespace STEP_JSON_Application_for_ASKON
         private readonly double NodeHeight = 100;
         private readonly double VerticalSpacing = 100;
         private readonly double HorizontalSpacing = 120;
+        private readonly JsonManager jsonManager;
+        private string lastJsonContent; // Для предотвращения избыточного перестроения схемы
+        private bool isUpdating; // Флаг для предотвращения множественных вызовов LostFocus
 
-        public void GenerateSchema(JObject jsonObject, Canvas schemaCanvas)
+        public SchemaManager(JsonManager jsonManager)
         {
-            // Очищаем холст перед генерацией новой схемы
-            schemaCanvas.Children.Clear();
+            if (jsonManager == null)
+                throw new ArgumentNullException("jsonManager");
+            this.jsonManager = jsonManager;
+            isUpdating = false;
+            Console.WriteLine("SchemaManager initialized");
+        }
 
-            // Создаем группу трансформаций для перемещения и масштабирования
-            TransformGroup transformGroup = new TransformGroup();
-            TranslateTransform translateTransform = new TranslateTransform(0, 0);
-            ScaleTransform scaleTransform = new ScaleTransform(1, 1);
-            transformGroup.Children.Add(scaleTransform);
-            transformGroup.Children.Add(translateTransform);
-            schemaCanvas.RenderTransform = transformGroup;
+        public void GenerateSchema(JObject jsonObject, Canvas schemaCanvas, bool fullRefresh = true)
+        {
+            Console.WriteLine($"GenerateSchema called with jsonObject: {(jsonObject != null ? "not null" : "null")}, fullRefresh={fullRefresh}");
+
+            // Нормализуем JSON для сравнения, чтобы игнорировать пробелы и порядок свойств
+            string currentJson = JsonConvert.SerializeObject(jsonObject, Formatting.None);
+            Console.WriteLine($"GenerateSchema: lastJsonContent == currentJson: {lastJsonContent == currentJson}");
+            if (lastJsonContent == currentJson && !fullRefresh)
+            {
+                Console.WriteLine("GenerateSchema: Skipping due to identical JSON and partial refresh");
+                return;
+            }
+            lastJsonContent = currentJson;
+
+            // Объявляем transformGroup, translateTransform и scaleTransform на уровне метода
+            TransformGroup transformGroup = null;
+            TranslateTransform translateTransform = null;
+            ScaleTransform scaleTransform = null;
+
+            if (fullRefresh)
+            {
+                schemaCanvas.Children.Clear();
+
+                transformGroup = new TransformGroup();
+                translateTransform = new TranslateTransform(0, 0);
+                scaleTransform = new ScaleTransform(1, 1);
+                transformGroup.Children.Add(scaleTransform);
+                transformGroup.Children.Add(translateTransform);
+                schemaCanvas.RenderTransform = transformGroup;
+            }
 
             if (jsonObject == null || jsonObject["instances"] == null)
             {
                 MessageBox.Show("В JSON отсутствует массив 'instances'.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                Console.WriteLine("GenerateSchema: JSON or instances is null");
                 return;
             }
 
@@ -40,6 +72,7 @@ namespace STEP_JSON_Application_for_ASKON
             if (instances == null || instances.Count == 0)
             {
                 MessageBox.Show("Массив 'instances' пуст или некорректен.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                Console.WriteLine("GenerateSchema: instances is null or empty");
                 return;
             }
 
@@ -110,21 +143,21 @@ namespace STEP_JSON_Application_for_ASKON
             var levels = new Dictionary<int, List<(string Id, JObject Instance)>>();
             var usedIds = new HashSet<string>();
 
-            void BuildTree(string id, int level)
+            void BuildTree(string nodeId, int nodeLevel)
             {
-                if (!relationships.Any(r => r.ParentId == id)) return;
+                if (!relationships.Any(r => r.ParentId == nodeId)) return;
 
-                if (!levels.ContainsKey(level))
-                    levels[level] = new List<(string, JObject)>();
+                if (!levels.ContainsKey(nodeLevel))
+                    levels[nodeLevel] = new List<(string, JObject)>();
 
-                var instance = instances.FirstOrDefault(i => i["id"]?.ToString() == id);
-                if (instance != null && !levels[level].Any(l => l.Id == id))
+                var nodeInstance = instances.FirstOrDefault(i => i["id"]?.ToString() == nodeId);
+                if (nodeInstance != null && !levels[nodeLevel].Any(l => l.Id == nodeId))
                 {
-                    levels[level].Add((id, instance));
-                    usedIds.Add(id);
-                    foreach (var childId in relationships.Where(r => r.ParentId == id).Select(r => r.ChildId))
+                    levels[nodeLevel].Add((nodeId, nodeInstance));
+                    usedIds.Add(nodeId);
+                    foreach (var childId in relationships.Where(r => r.ParentId == nodeId).Select(r => r.ChildId))
                     {
-                        BuildTree(childId, level + 1);
+                        BuildTree(childId, nodeLevel + 1);
                     }
                 }
             }
@@ -134,154 +167,166 @@ namespace STEP_JSON_Application_for_ASKON
                 BuildTree(rootId, 0);
             }
 
-            double maxCanvasWidth = 0;
-            double maxCanvasHeight = 0;
-
-            foreach (var level in levels.OrderBy(l => l.Key))
+            if (fullRefresh)
             {
-                double levelY = level.Key * (NodeHeight + VerticalSpacing) + 20;
-                int nodesInLevel = level.Value.Count;
-                double totalWidth = nodesInLevel * NodeWidth + (nodesInLevel - 1) * HorizontalSpacing;
-                double startX = (schemaCanvas.Width - totalWidth) / 2;
-                if (startX < 20) startX = 20;
+                double maxCanvasWidth = 0;
+                double maxCanvasHeight = 0;
 
-                int nodeIndex = 0;
-                foreach (var (id, instance) in level.Value)
+                foreach (var levelEntry in levels.OrderBy(l => l.Key))
                 {
-                    double levelX = startX + nodeIndex * (NodeWidth + HorizontalSpacing);
-                    string type = instance["type"]?.ToString() ?? "unknown";
-                    string label = GetFriendlyLabel(id, instance, instances);
+                    double levelY = levelEntry.Key * (NodeHeight + VerticalSpacing) + 20;
+                    int nodesInLevel = levelEntry.Value.Count;
+                    double totalWidth = nodesInLevel * NodeWidth + (nodesInLevel - 1) * HorizontalSpacing;
+                    double startX = (schemaCanvas.Width - totalWidth) / 2;
+                    if (startX < 20) startX = 20;
 
-                    var node = CreateStyledEllipse(type, label);
-                    Canvas.SetLeft(node, levelX);
-                    Canvas.SetTop(node, levelY);
-                    schemaCanvas.Children.Add(node);
-                    nodes[id] = (node, levelX, levelY);
-
-                    nodeIndex++;
-                    maxCanvasWidth = Math.Max(maxCanvasWidth, levelX + NodeWidth);
-                }
-                maxCanvasHeight = Math.Max(maxCanvasHeight, levelY + NodeHeight);
-            }
-
-            schemaCanvas.Width = Math.Max(schemaCanvas.Width, maxCanvasWidth + 20);
-            schemaCanvas.Height = Math.Max(maxCanvasHeight + 20, schemaCanvas.Height);
-
-            foreach (var rel in relationships)
-            {
-                string parentId = rel.ParentId;
-                string childId = rel.ChildId;
-                string label = rel.Label;
-                string relType = rel.Type;
-
-                if (nodes.ContainsKey(parentId) && nodes.ContainsKey(childId))
-                {
-                    var parent = nodes[parentId];
-                    var child = nodes[childId];
-
-                    double startX = parent.X + NodeWidth / 2;
-                    double startY = parent.Y + NodeHeight;
-                    double endX = child.X + NodeWidth / 2;
-                    double endY = child.Y;
-
-                    var connection = CreateSimpleConnection(relType, startX, startY, endX, endY);
-                    schemaCanvas.Children.Add(connection.Line);
-                    schemaCanvas.Children.Add(connection.Arrow);
-
-                    var labelText = new TextBlock
+                    int nodeIndex = 0;
+                    foreach (var (nodeId, nodeInstance) in levelEntry.Value)
                     {
-                        Text = label,
-                        FontSize = 12,
-                        Foreground = Brushes.Black,
-                        Background = Brushes.White,
-                        Padding = new Thickness(2),
-                        TextAlignment = TextAlignment.Center,
-                        TextWrapping = TextWrapping.Wrap,
-                        MaxWidth = 120
-                    };
-                    labelText.Measure(new Size(120, double.PositiveInfinity));
-                    double midX = startX + (endX - startX) / 2;
-                    double midY = startY + (endY - startY) / 2;
-                    Canvas.SetLeft(labelText, midX - labelText.DesiredSize.Width / 2);
-                    Canvas.SetTop(labelText, midY - labelText.DesiredSize.Height / 2);
-                    schemaCanvas.Children.Add(labelText);
+                        double levelX = startX + nodeIndex * (NodeWidth + HorizontalSpacing);
+                        string type = nodeInstance["type"]?.ToString() ?? "unknown";
+                        string label = GetFriendlyLabel(nodeId, nodeInstance, instances);
+
+                        var node = CreateStyledEllipse(nodeId, type, label, instances);
+                        Canvas.SetLeft(node, levelX);
+                        Canvas.SetTop(node, levelY);
+                        schemaCanvas.Children.Add(node);
+                        nodes[nodeId] = (node, levelX, levelY);
+
+                        nodeIndex++;
+                        maxCanvasWidth = Math.Max(maxCanvasWidth, levelX + NodeWidth);
+                    }
+                    maxCanvasHeight = Math.Max(maxCanvasHeight, levelY + NodeHeight);
                 }
-            }
 
-            // Добавляем обработчики событий для плавного перемещения по холсту
-            Point lastMousePosition = new Point();
-            bool isDragging = false;
+                schemaCanvas.Width = Math.Max(schemaCanvas.Width, maxCanvasWidth + 20);
+                schemaCanvas.Height = Math.Max(maxCanvasHeight + 20, schemaCanvas.Height);
 
-            schemaCanvas.MouseLeftButtonDown += (sender, e) =>
-            {
-                schemaCanvas.Cursor = Cursors.Hand;
-                lastMousePosition = e.GetPosition(schemaCanvas);
-                isDragging = true;
-                schemaCanvas.CaptureMouse();
-                CompositionTarget.Rendering += UpdateCanvasPosition;
-            };
-
-            void UpdateCanvasPosition(object sender, EventArgs e)
-            {
-                if (isDragging)
+                foreach (var rel in relationships)
                 {
-                    Point currentPosition = Mouse.GetPosition(schemaCanvas);
-                    Vector delta = currentPosition - lastMousePosition;
-                    lastMousePosition = currentPosition;
+                    string parentId = rel.ParentId;
+                    string childId = rel.ChildId;
+                    string label = rel.Label;
+                    string relType = rel.Type;
 
-                    // Свободное перемещение без ограничений
-                    translateTransform.X += delta.X;
-                    translateTransform.Y += delta.Y;
+                    if (nodes.ContainsKey(parentId) && nodes.ContainsKey(childId))
+                    {
+                        var parent = nodes[parentId];
+                        var child = nodes[childId];
+
+                        double startX = parent.X + NodeWidth / 2;
+                        double startY = parent.Y + NodeHeight;
+                        double endX = child.X + NodeWidth / 2;
+                        double endY = child.Y;
+
+                        var connection = CreateSimpleConnection(relType, startX, startY, endX, endY);
+                        schemaCanvas.Children.Add(connection.Line);
+                        schemaCanvas.Children.Add(connection.Arrow);
+
+                        var labelText = new TextBlock
+                        {
+                            Text = label,
+                            FontSize = 12,
+                            Foreground = Brushes.Black,
+                            Background = Brushes.White,
+                            Padding = new Thickness(2),
+                            TextAlignment = TextAlignment.Center,
+                            TextWrapping = TextWrapping.Wrap,
+                            MaxWidth = 120
+                        };
+                        labelText.Measure(new Size(120, double.PositiveInfinity));
+                        double midX = startX + (endX - startX) / 2;
+                        double midY = startY + (endY - startY) / 2;
+                        Canvas.SetLeft(labelText, midX - labelText.DesiredSize.Width / 2);
+                        Canvas.SetTop(labelText, midY - labelText.DesiredSize.Height / 2);
+                        schemaCanvas.Children.Add(labelText);
+                    }
                 }
-            }
 
-            schemaCanvas.MouseLeftButtonUp += (sender, e) =>
-            {
-                schemaCanvas.Cursor = Cursors.Arrow;
-                isDragging = false;
-                schemaCanvas.ReleaseMouseCapture();
-                CompositionTarget.Rendering -= UpdateCanvasPosition;
-            };
+                // Добавляем обработчики событий для плавного перемещения по холсту
+                Point lastMousePosition = new Point();
+                bool isDragging = false;
 
-            schemaCanvas.MouseLeave += (sender, e) =>
-            {
-                if (isDragging)
+                schemaCanvas.MouseLeftButtonDown += (sender, e) =>
+                {
+                    schemaCanvas.Cursor = Cursors.Hand;
+                    lastMousePosition = e.GetPosition(schemaCanvas);
+                    isDragging = true;
+                    schemaCanvas.CaptureMouse();
+                    CompositionTarget.Rendering += UpdateCanvasPosition;
+                };
+
+                void UpdateCanvasPosition(object sender, EventArgs e)
+                {
+                    if (isDragging)
+                    {
+                        Point currentPosition = Mouse.GetPosition(schemaCanvas);
+                        Vector delta = currentPosition - lastMousePosition;
+                        lastMousePosition = currentPosition;
+
+                        translateTransform.X += delta.X;
+                        translateTransform.Y += delta.Y;
+                    }
+                }
+
+                schemaCanvas.MouseLeftButtonUp += (sender, e) =>
                 {
                     schemaCanvas.Cursor = Cursors.Arrow;
                     isDragging = false;
                     schemaCanvas.ReleaseMouseCapture();
                     CompositionTarget.Rendering -= UpdateCanvasPosition;
-                }
-            };
+                };
 
-            // Добавляем обработчик для масштабирования с помощью CTRL + колесико мыши
-            schemaCanvas.MouseWheel += (sender, e) =>
-            {
-                if (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
+                schemaCanvas.MouseLeave += (sender, e) =>
                 {
-                    double scaleFactor = e.Delta > 0 ? 1.1 : 0.9;
-                    double newScaleX = scaleTransform.ScaleX * scaleFactor;
-                    double newScaleY = scaleTransform.ScaleY * scaleFactor;
-
-                    // Вычисляем минимальный масштаб, при котором схема помещается в видимую область
-                    double viewWidth = schemaCanvas.ActualWidth;
-                    double viewHeight = schemaCanvas.ActualHeight;
-                    double minScaleX = viewWidth / schemaCanvas.Width;
-                    double minScaleY = viewHeight / schemaCanvas.Height;
-                    double minScale = Math.Max(minScaleX, minScaleY);
-
-                    // Ограничиваем масштаб: минимум - чтобы схема помещалась, максимум - 5
-                    if (newScaleX >= minScale && newScaleX <= 5)
+                    if (isDragging)
                     {
-                        Point mousePosition = e.GetPosition(schemaCanvas);
-                        scaleTransform.CenterX = mousePosition.X;
-                        scaleTransform.CenterY = mousePosition.Y;
-                        scaleTransform.ScaleX = newScaleX;
-                        scaleTransform.ScaleY = newScaleY;
+                        schemaCanvas.Cursor = Cursors.Arrow;
+                        isDragging = false;
+                        schemaCanvas.ReleaseMouseCapture();
+                        CompositionTarget.Rendering -= UpdateCanvasPosition;
                     }
-                    e.Handled = true;
+                };
+
+                schemaCanvas.MouseWheel += (sender, e) =>
+                {
+                    if (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
+                    {
+                        double scaleFactor = e.Delta > 0 ? 1.1 : 0.9;
+                        double newScaleX = scaleTransform.ScaleX * scaleFactor;
+                        double newScaleY = scaleTransform.ScaleY * scaleFactor;
+
+                        double viewWidth = schemaCanvas.ActualWidth;
+                        double viewHeight = schemaCanvas.ActualHeight;
+                        double minScaleX = viewWidth / schemaCanvas.Width;
+                        double minScaleY = viewHeight / schemaCanvas.Height;
+                        double minScale = Math.Max(minScaleX, minScaleY);
+
+                        if (newScaleX >= minScale && newScaleX <= 5)
+                        {
+                            Point mousePosition = e.GetPosition(schemaCanvas);
+                            scaleTransform.CenterX = mousePosition.X;
+                            scaleTransform.CenterY = mousePosition.Y;
+                            scaleTransform.ScaleX = newScaleX;
+                            scaleTransform.ScaleY = newScaleY;
+                        }
+                        e.Handled = true;
+                    }
+                };
+            }
+            else
+            {
+                // Частичное обновление: обновляем только текст в существующих узлах
+                foreach (var levelEntry in levels.OrderBy(l => l.Key))
+                {
+                    foreach (var (nodeId, nodeInstance) in levelEntry.Value)
+                    {
+                        string type = nodeInstance["type"]?.ToString() ?? "unknown";
+                        string label = GetFriendlyLabel(nodeId, nodeInstance, instances);
+                        UpdateEllipseLabel(nodeId, label, schemaCanvas);
+                    }
                 }
-            };
+            }
         }
 
         private string GetQuantityLabel(string quantityId, List<JObject> instances)
@@ -303,7 +348,7 @@ namespace STEP_JSON_Application_for_ASKON
             if (quantity == null) return "шт.";
 
             string unitId = quantity["attributes"]?["unit_component"]?.ToString();
-            var unit = instances.FirstOrDefault(i => i["id"]?.ToString() == unitId && i["type"]?.ToString() == "context_dependent_unit");
+            var unit = unitId != null ? instances.FirstOrDefault(i => i["id"]?.ToString() == unitId && i["type"]?.ToString() == "context_dependent_unit") : null;
             string unitName = unit?["attributes"]?["id"]?.ToString() ?? "шт.";
 
             return unitName;
@@ -357,9 +402,39 @@ namespace STEP_JSON_Application_for_ASKON
             return label;
         }
 
-        private UIElement CreateStyledEllipse(string type, string label)
+        private string CleanLabel(string label)
         {
-            var textBlock = new TextBlock
+            if (string.IsNullOrEmpty(label)) return label;
+
+            // Удаляем "версия ..." и всё после неё
+            int versionIndex = label.LastIndexOf("версия", StringComparison.OrdinalIgnoreCase);
+            string baseLabel = versionIndex >= 0 ? label.Substring(0, versionIndex).Trim() : label;
+
+            // Разделяем на части
+            string[] parts = baseLabel.Split(new[] { " " }, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length < 2) return baseLabel;
+
+            // Проверяем, является ли первая часть кодом (например, содержит точки и минимум 3 сегмента)
+            string code = parts[0];
+            if (code.Contains(".") && code.Split('.').Length >= 3)
+            {
+                // Собираем оставшиеся части как имя
+                string name = string.Join(" ", parts.Skip(1)).Trim();
+                // Удаляем code из начала name, если он там есть
+                if (name.StartsWith(code, StringComparison.OrdinalIgnoreCase))
+                {
+                    name = name.Substring(code.Length).Trim();
+                }
+                return $"{code} {name}".Trim();
+            }
+
+            return baseLabel;
+        }
+
+        private UIElement CreateStyledEllipse(string id, string type, string label, List<JObject> instances)
+        {
+            Console.WriteLine($"CreateStyledEllipse: id={id}, type={type}, label='{label}'");
+            var textBox = new TextBox
             {
                 Text = label,
                 TextWrapping = TextWrapping.Wrap,
@@ -367,7 +442,61 @@ namespace STEP_JSON_Application_for_ASKON
                 FontSize = 12,
                 MaxWidth = NodeWidth - 20,
                 VerticalAlignment = VerticalAlignment.Center,
-                HorizontalAlignment = HorizontalAlignment.Center
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Background = Brushes.White,
+                BorderBrush = null, // Убираем цвет границы
+                BorderThickness = new Thickness(0), // Убираем толщину границы
+                Tag = id
+            };
+
+            textBox.LostFocus += (sender, e) =>
+            {
+                Console.WriteLine($"LostFocus: id={id}, isUpdating={isUpdating}, text='{textBox.Text}'");
+                if (isUpdating)
+                    return;
+
+                if (sender is TextBox tb)
+                {
+                    string cleanedText = CleanLabel(tb.Text);
+                    if (cleanedText != GetFriendlyLabel(id, instances.FirstOrDefault(i => i["id"]?.ToString() == id), instances))
+                    {
+                        Console.WriteLine($"LostFocus: Text changed, calling UpdateJsonContent with newLabel='{cleanedText}'");
+                        isUpdating = true;
+                        jsonManager.UpdateJsonContent(id, cleanedText, type, instances);
+                        isUpdating = false;
+                    }
+                    else
+                    {
+                        Console.WriteLine("LostFocus: Text unchanged or cleaned, skipping UpdateJsonContent");
+                    }
+                }
+            };
+
+            textBox.KeyDown += (sender, e) =>
+            {
+                if (e.Key == Key.Enter || e.Key == Key.Return)
+                {
+                    Console.WriteLine($"KeyDown (Enter): id={id}, isUpdating={isUpdating}, text='{textBox.Text}'");
+                    if (isUpdating)
+                        return;
+
+                    if (sender is TextBox tb)
+                    {
+                        string cleanedText = CleanLabel(tb.Text);
+                        if (cleanedText != GetFriendlyLabel(id, instances.FirstOrDefault(i => i["id"]?.ToString() == id), instances))
+                        {
+                            Console.WriteLine($"KeyDown: Text changed, calling UpdateJsonContent with newLabel='{cleanedText}'");
+                            isUpdating = true;
+                            jsonManager.UpdateJsonContent(id, cleanedText, type, instances);
+                            isUpdating = false;
+                        }
+                        else
+                        {
+                            Console.WriteLine("KeyDown: Text unchanged or cleaned, skipping UpdateJsonContent");
+                        }
+                        Keyboard.ClearFocus();
+                    }
+                }
             };
 
             var ellipse = new Ellipse
@@ -382,18 +511,39 @@ namespace STEP_JSON_Application_for_ASKON
             var container = new Canvas
             {
                 Width = NodeWidth,
-                Height = NodeHeight
+                Height = NodeHeight,
+                Tag = id
             };
             container.Children.Add(ellipse);
-            container.Children.Add(textBlock);
+            container.Children.Add(textBox);
 
-            textBlock.Measure(new Size(NodeWidth - 20, NodeHeight));
-            double textWidth = textBlock.DesiredSize.Width;
-            double textHeight = textBlock.DesiredSize.Height;
-            Canvas.SetLeft(textBlock, (NodeWidth - textWidth) / 2);
-            Canvas.SetTop(textBlock, (NodeHeight - textHeight) / 2);
+            textBox.Measure(new Size(NodeWidth - 20, NodeHeight));
+            double textWidth = textBox.DesiredSize.Width;
+            double textHeight = textBox.DesiredSize.Height;
+            Canvas.SetLeft(textBox, (NodeWidth - textWidth) / 2);
+            Canvas.SetTop(textBox, (NodeHeight - textHeight) / 2);
 
             return container;
+        }
+
+        private void UpdateEllipseLabel(string id, string label, Canvas schemaCanvas)
+        {
+            Console.WriteLine($"UpdateEllipseLabel: id={id}, label='{label}'");
+            var container = schemaCanvas.Children.OfType<Canvas>().FirstOrDefault(c => c.Tag?.ToString() == id);
+            if (container != null)
+            {
+                var textBox = container.Children.OfType<TextBox>().FirstOrDefault();
+                if (textBox != null)
+                {
+                    textBox.Text = label;
+                    textBox.Tag = id;
+                    textBox.Measure(new Size(NodeWidth - 20, NodeHeight));
+                    double textWidth = textBox.DesiredSize.Width;
+                    double textHeight = textBox.DesiredSize.Height;
+                    Canvas.SetLeft(textBox, (NodeWidth - textWidth) / 2);
+                    Canvas.SetTop(textBox, (NodeHeight - textHeight) / 2);
+                }
+            }
         }
 
         private (Line Line, Polygon Arrow) CreateSimpleConnection(string relType, double startX, double startY, double endX, double endY)
