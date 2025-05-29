@@ -218,10 +218,73 @@ namespace STEP_JSON_Application_for_ASKON
 
         private void FillTreeViewWithJsonNodes(JObject jsonObject)
         {
-            var treeNodes = treeManager.FormatJsonObject(jsonObject);
-            foreach (var node in treeNodes)
+            var newNodes = treeManager.FormatJsonObject(jsonObject);
+            UpdateTreeNodes(mainWindow.TextTabTreeView, newNodes);
+        }
+
+        private void UpdateTreeNodes(ItemsControl treeView, List<TreeNode> newNodes)
+        {
+            Console.WriteLine($"UpdateTreeNodes: Updating tree with {newNodes.Count} new nodes");
+
+            var existingNodes = treeView.Items.Cast<TreeNode>().ToList();
+            var nodesToKeep = new List<TreeNode>();
+            var nodesToAdd = new List<TreeNode>(newNodes);
+
+            foreach (var existingNode in existingNodes)
             {
-                mainWindow.TextTabTreeView.Items.Add(node);
+                var matchingNode = newNodes.FirstOrDefault(n => n.Tag == existingNode.Tag);
+                if (matchingNode != null)
+                {
+                    existingNode.Name = matchingNode.Name;
+                    existingNode.Value = matchingNode.Value;
+                    existingNode.IsExpanded = matchingNode.IsExpanded;
+                    existingNode.FontSize = matchingNode.FontSize;
+                    existingNode.Margin = matchingNode.Margin;
+                    nodesToKeep.Add(existingNode);
+                    nodesToAdd.Remove(matchingNode);
+                    Console.WriteLine($"UpdateTreeNodes: Updated node with Tag={existingNode.Tag}, Name={existingNode.Name}");
+
+                    UpdateTreeNodesForChildren(existingNode, matchingNode.Children);
+                }
+            }
+
+            treeView.Items.Clear();
+            foreach (var node in nodesToKeep.Concat(nodesToAdd))
+            {
+                treeView.Items.Add(node);
+            }
+
+            treeManager.ExpandAllTreeViewItems(treeView);
+        }
+
+        private void UpdateTreeNodesForChildren(TreeNode parentNode, List<TreeNode> newChildren)
+        {
+            var existingChildren = parentNode.Children.ToList();
+            var childrenToKeep = new List<TreeNode>();
+            var childrenToAdd = new List<TreeNode>(newChildren);
+
+            foreach (var existingChild in existingChildren)
+            {
+                var matchingChild = newChildren.FirstOrDefault(c => c.Tag == existingChild.Tag);
+                if (matchingChild != null)
+                {
+                    existingChild.Name = matchingChild.Name;
+                    existingChild.Value = matchingChild.Value;
+                    existingChild.IsExpanded = matchingChild.IsExpanded;
+                    existingChild.FontSize = matchingChild.FontSize;
+                    existingChild.Margin = matchingChild.Margin;
+                    childrenToKeep.Add(existingChild);
+                    childrenToAdd.Remove(matchingChild);
+                    Console.WriteLine($"UpdateTreeNodesForChildren: Updated child node with Tag={existingChild.Tag}, Name={existingChild.Name}");
+
+                    UpdateTreeNodesForChildren(existingChild, matchingChild.Children);
+                }
+            }
+
+            parentNode.Children.Clear();
+            foreach (var child in childrenToKeep.Concat(childrenToAdd))
+            {
+                parentNode.Children.Add(child);
             }
         }
 
@@ -310,38 +373,15 @@ namespace STEP_JSON_Application_for_ASKON
             return null;
         }
 
-        private string CleanLabel(string label)
+        public void UpdateJsonContent(string instanceId, string field, string value, List<JObject> instances)
         {
-            if (string.IsNullOrEmpty(label)) return label;
-
-            // Удаляем "версия ..." и всё после неё
-            int versionIndex = label.LastIndexOf("версия", StringComparison.OrdinalIgnoreCase);
-            string baseLabel = versionIndex >= 0 ? label.Substring(0, versionIndex).Trim() : label;
-
-            // Разделяем на части
-            string[] parts = baseLabel.Split(new[] { " " }, StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length < 2) return baseLabel;
-
-            // Проверяем, является ли первая часть кодом (например, содержит точки и минимум 3 сегмента)
-            string code = parts[0];
-            if (code.Contains(".") && code.Split('.').Length >= 3)
+            Console.WriteLine($"UpdateJsonContent: instanceId={instanceId}, field={field}, value='{value}'");
+            if (string.IsNullOrEmpty(instanceId) || string.IsNullOrEmpty(field))
             {
-                // Собираем оставшиеся части как имя
-                string name = string.Join(" ", parts.Skip(1)).Trim();
-                // Удаляем code из начала name, если он там есть
-                if (name.StartsWith(code, StringComparison.OrdinalIgnoreCase))
-                {
-                    name = name.Substring(code.Length).Trim();
-                }
-                return $"{code} {name}".Trim();
+                Console.WriteLine("UpdateJsonContent: Invalid instanceId or field");
+                return;
             }
 
-            return baseLabel;
-        }
-
-        public void UpdateJsonContent(string instanceId, string newLabel, string type, List<JObject> instances)
-        {
-            Console.WriteLine($"UpdateJsonContent: instanceId={instanceId}, newLabel='{newLabel}', type={type}");
             if (!TryConvertJsonToJObject(mainWindow.StepJsonTextBox.Text, out JObject jsonObject))
             {
                 Console.WriteLine("UpdateJsonContent: Failed to parse JSON");
@@ -355,13 +395,10 @@ namespace STEP_JSON_Application_for_ASKON
                 return;
             }
 
-            Console.WriteLine($"UpdateJsonContent: instancesArray count={instancesArray.Count}");
             var instance = instancesArray.FirstOrDefault(i => i["id"] != null && i["id"].ToString() == instanceId);
             if (instance == null)
             {
                 Console.WriteLine($"UpdateJsonContent: instance not found for id={instanceId}");
-                var availableIds = instancesArray.Take(5).Select(i => i["id"]?.ToString() ?? "null").ToList();
-                Console.WriteLine($"UpdateJsonContent: Available instance IDs (first 5): {string.Join(", ", availableIds)}");
                 return;
             }
 
@@ -372,62 +409,48 @@ namespace STEP_JSON_Application_for_ASKON
                 return;
             }
 
-            if (type.Contains("product_definition"))
+            if (instance["type"]?.ToString().Contains("product_definition") == true)
             {
-                var formationId = attributes["formation"] != null ? attributes["formation"].ToString() : null;
+                var formationId = attributes["formation"]?.ToString();
                 var formation = instancesArray.FirstOrDefault(i => i["id"] != null && i["id"].ToString() == formationId);
-                var productId = formation != null && formation["attributes"] != null ? formation["attributes"]["of_product"]?.ToString() : null;
+                var productId = formation?["attributes"]?["of_product"]?.ToString();
                 var product = productId != null ? instancesArray.FirstOrDefault(i => i["id"] != null && i["id"].ToString() == productId) : null;
                 if (product != null && product["attributes"] != null)
                 {
-                    // Очищаем метку от лишних частей
-                    string cleanedLabel = CleanLabel(newLabel);
-                    // Удаляем defId и productCode из начала метки, если они присутствуют
-                    string defId = attributes["id"]?.ToString() ?? "";
-                    string productCode = product["attributes"]["id"]?.ToString() ?? "";
-                    string name = cleanedLabel;
-                    if (!string.IsNullOrEmpty(defId) && name.StartsWith(defId, StringComparison.OrdinalIgnoreCase))
+                    var productAttributes = product["attributes"] as JObject;
+                    if (field == "name" || field == "id")
                     {
-                        name = name.Substring(defId.Length).Trim();
+                        productAttributes[field] = value;
+                        Console.WriteLine($"UpdateJsonContent: Updated product.attributes.{field}='{value}' for productId={productId}");
                     }
-                    if (!string.IsNullOrEmpty(productCode) && name.StartsWith(productCode, StringComparison.OrdinalIgnoreCase))
+                    else if (field == "version")
                     {
-                        name = name.Substring(productCode.Length).Trim();
+                        if (formation?["attributes"] != null)
+                        {
+                            formation["attributes"]["id"] = value;
+                            Console.WriteLine($"UpdateJsonContent: Updated formation.attributes.id='{value}' for formationId={formationId}");
+                        }
                     }
-                    Console.WriteLine($"UpdateJsonContent: Setting product.attributes.name='{name}' for productId={productId}");
-                    product["attributes"]["name"] = name; // Заменяем только name
                 }
                 else
                 {
                     Console.WriteLine($"UpdateJsonContent: product not found for productId={productId}");
                 }
             }
-            else if (type == "eskd_product" || type == "organization")
+            else if (instance["type"]?.ToString() == "eskd_product" || instance["type"]?.ToString() == "organization")
             {
-                string cleanedLabel = CleanLabel(newLabel);
-                // Для eskd_product удаляем productCode из начала, если он есть
-                string productCode = attributes["id"]?.ToString() ?? "";
-                string name = cleanedLabel;
-                if (!string.IsNullOrEmpty(productCode) && name.StartsWith(productCode, StringComparison.OrdinalIgnoreCase))
-                {
-                    name = name.Substring(productCode.Length).Trim();
-                }
-                Console.WriteLine($"UpdateJsonContent: Setting attributes.name='{name}' for instanceId={instanceId}");
-                attributes["name"] = name; // Заменяем name
+                attributes[field] = value;
+                Console.WriteLine($"UpdateJsonContent: Updated attributes.{field}='{value}' for instanceId={instanceId}");
             }
 
             string updatedJson = JsonConvert.SerializeObject(jsonObject, Formatting.Indented);
-            Console.WriteLine("UpdateJsonContent: Updating StepJsonTextBox.Text");
             mainWindow.StepJsonTextBox.Text = updatedJson;
 
-            // Обновляем дерево и схему (только текст)
-            Console.WriteLine("UpdateJsonContent: Calling FillTreeViewWithJsonNodes, GenerateSchema");
             FillTreeViewWithJsonNodes(jsonObject);
-            mainWindow.SchemaManager.GenerateSchema(jsonObject, mainWindow.SchemaCanvas, false); // Частичное обновление
+            mainWindow.SchemaManager.GenerateSchema(jsonObject, mainWindow.SchemaCanvas, false);
             mainWindow.ErrorPanel.Visibility = Visibility.Collapsed;
         }
 
-        #region Сохранение файла
         public void SaveFile(string action)
         {
             Microsoft.Win32.SaveFileDialog saveFileDialog = new Microsoft.Win32.SaveFileDialog
@@ -490,6 +513,5 @@ namespace STEP_JSON_Application_for_ASKON
         {
             return mainWindow.StepJsonTextBox.Text;
         }
-        #endregion
     }
 }

@@ -18,8 +18,16 @@ namespace STEP_JSON_Application_for_ASKON
         private readonly double VerticalSpacing = 100;
         private readonly double HorizontalSpacing = 120;
         private readonly JsonManager jsonManager;
-        private string lastJsonContent; // Для предотвращения избыточного перестроения схемы
-        private bool isUpdating; // Флаг для предотвращения множественных вызовов LostFocus
+        private string lastJsonContent;
+        private bool isUpdating;
+        private DateTime lastUpdateTime;
+
+        private class LabelInfo
+        {
+            public string Id { get; set; }
+            public string Name { get; set; }
+            public string Version { get; set; }
+        }
 
         public SchemaManager(JsonManager jsonManager)
         {
@@ -27,6 +35,7 @@ namespace STEP_JSON_Application_for_ASKON
                 throw new ArgumentNullException("jsonManager");
             this.jsonManager = jsonManager;
             isUpdating = false;
+            lastUpdateTime = DateTime.MinValue;
             Console.WriteLine("SchemaManager initialized");
         }
 
@@ -34,9 +43,7 @@ namespace STEP_JSON_Application_for_ASKON
         {
             Console.WriteLine($"GenerateSchema called with jsonObject: {(jsonObject != null ? "not null" : "null")}, fullRefresh={fullRefresh}");
 
-            // Нормализуем JSON для сравнения, чтобы игнорировать пробелы и порядок свойств
             string currentJson = JsonConvert.SerializeObject(jsonObject, Formatting.None);
-            Console.WriteLine($"GenerateSchema: lastJsonContent == currentJson: {lastJsonContent == currentJson}");
             if (lastJsonContent == currentJson && !fullRefresh)
             {
                 Console.WriteLine("GenerateSchema: Skipping due to identical JSON and partial refresh");
@@ -44,7 +51,6 @@ namespace STEP_JSON_Application_for_ASKON
             }
             lastJsonContent = currentJson;
 
-            // Объявляем transformGroup, translateTransform и scaleTransform на уровне метода
             TransformGroup transformGroup = null;
             TranslateTransform translateTransform = null;
             ScaleTransform scaleTransform = null;
@@ -52,7 +58,6 @@ namespace STEP_JSON_Application_for_ASKON
             if (fullRefresh)
             {
                 schemaCanvas.Children.Clear();
-
                 transformGroup = new TransformGroup();
                 translateTransform = new TranslateTransform(0, 0);
                 scaleTransform = new ScaleTransform(1, 1);
@@ -78,10 +83,18 @@ namespace STEP_JSON_Application_for_ASKON
 
             var nodes = new Dictionary<string, (UIElement Element, double X, double Y)>();
             var relationships = new List<(string ParentId, string ChildId, string Label, string Type)>();
+            var processedRelationships = new HashSet<string>();
 
             foreach (var instance in instances)
             {
-                string type = instance["type"] != null ? instance["type"].ToString() : "unknown";
+                string id = instance["id"]?.ToString();
+                if (string.IsNullOrEmpty(id))
+                {
+                    Console.WriteLine("GenerateSchema: Skipping instance with null or empty id");
+                    continue;
+                }
+
+                string type = instance["type"]?.ToString() ?? "unknown";
                 var attributes = instance["attributes"] as JObject;
 
                 if (attributes != null)
@@ -90,38 +103,35 @@ namespace STEP_JSON_Application_for_ASKON
                     {
                         string relatingId = attributes["relating_product_definition"]?.ToString();
                         string relatedId = attributes["related_product_definition"]?.ToString();
-                        if (!string.IsNullOrEmpty(relatingId) && !string.IsNullOrEmpty(relatedId))
+                        string relId = attributes["id"]?.ToString();
+                        if (!string.IsNullOrEmpty(relatingId) && !string.IsNullOrEmpty(relatedId) && !string.IsNullOrEmpty(relId) && !processedRelationships.Contains(relId))
                         {
                             string refDesignator = attributes["reference_designator"]?.ToString();
                             string quantityId = attributes["quantity"]?.ToString();
                             string quantityLabel = GetQuantityLabel(quantityId, instances);
                             string unit = GetUnitForQuantity(quantityId, instances);
 
-                            string label;
-                            if (string.IsNullOrEmpty(refDesignator) && string.IsNullOrEmpty(quantityLabel))
-                            {
-                                label = "Состоит из,\nкол-во неизвестно";
-                            }
-                            else if (string.IsNullOrEmpty(refDesignator))
-                            {
-                                label = $"Состоит из,\nкол-во {quantityLabel} {unit}";
-                            }
-                            else
-                            {
-                                label = $"Состоит из,\nпоз.{refDesignator},\nкол-во {quantityLabel} {unit}";
-                            }
+                            string label = string.IsNullOrEmpty(refDesignator) && string.IsNullOrEmpty(quantityLabel)
+                                ? "Состоит из,\nкол-во неизвестно"
+                                : string.IsNullOrEmpty(refDesignator)
+                                    ? $"Состоит из,\nкол-во {quantityLabel} {unit}"
+                                    : $"Состоит из,\nпоз.{refDesignator},\nкол-во {quantityLabel} {unit}";
+
                             relationships.Add((relatingId, relatedId, label, "composition"));
+                            processedRelationships.Add(relId);
                         }
                     }
                     else if (type == "eskd_organization_product_assignment")
                     {
                         string productId = attributes["assigned_product"]?.ToString();
                         string orgId = attributes["assigned_organization"]?.ToString();
-                        if (!string.IsNullOrEmpty(productId) && !string.IsNullOrEmpty(orgId))
+                        string relId = attributes["id"]?.ToString();
+                        if (!string.IsNullOrEmpty(productId) && !string.IsNullOrEmpty(orgId) && !string.IsNullOrEmpty(relId) && !processedRelationships.Contains(relId))
                         {
                             string roleId = attributes["role"]?.ToString();
                             string role = instances.FirstOrDefault(i => i["id"]?.ToString() == roleId)?["attributes"]?["name"]?.ToString() ?? "Назначена организация";
                             relationships.Add((productId, orgId, role, "organization"));
+                            processedRelationships.Add(relId);
                         }
                     }
                     else if (type == "product_definition")
@@ -130,7 +140,12 @@ namespace STEP_JSON_Application_for_ASKON
                         string formationId = attributes["formation"]?.ToString();
                         if (!string.IsNullOrEmpty(defId) && !string.IsNullOrEmpty(formationId))
                         {
-                            relationships.Add((defId, formationId, "Версия", "version"));
+                            string relId = $"{defId}-{formationId}";
+                            if (!processedRelationships.Contains(relId))
+                            {
+                                relationships.Add((defId, formationId, "Версия", "version"));
+                                processedRelationships.Add(relId);
+                            }
                         }
                     }
                 }
@@ -145,13 +160,14 @@ namespace STEP_JSON_Application_for_ASKON
 
             void BuildTree(string nodeId, int nodeLevel)
             {
-                if (!relationships.Any(r => r.ParentId == nodeId)) return;
+                if (string.IsNullOrEmpty(nodeId) || !relationships.Any(r => r.ParentId == nodeId))
+                    return;
 
                 if (!levels.ContainsKey(nodeLevel))
                     levels[nodeLevel] = new List<(string, JObject)>();
 
                 var nodeInstance = instances.FirstOrDefault(i => i["id"]?.ToString() == nodeId);
-                if (nodeInstance != null && !levels[nodeLevel].Any(l => l.Id == nodeId))
+                if (nodeInstance != null && !usedIds.Contains(nodeId))
                 {
                     levels[nodeLevel].Add((nodeId, nodeInstance));
                     usedIds.Add(nodeId);
@@ -185,9 +201,9 @@ namespace STEP_JSON_Application_for_ASKON
                     {
                         double levelX = startX + nodeIndex * (NodeWidth + HorizontalSpacing);
                         string type = nodeInstance["type"]?.ToString() ?? "unknown";
-                        string label = GetFriendlyLabel(nodeId, nodeInstance, instances);
+                        var labelInfo = GetFriendlyLabel(nodeId, nodeInstance, instances);
 
-                        var node = CreateStyledEllipse(nodeId, type, label, instances);
+                        var node = CreateStyledEllipse(nodeId, type, labelInfo, instances);
                         Canvas.SetLeft(node, levelX);
                         Canvas.SetTop(node, levelY);
                         schemaCanvas.Children.Add(node);
@@ -243,7 +259,6 @@ namespace STEP_JSON_Application_for_ASKON
                     }
                 }
 
-                // Добавляем обработчики событий для плавного перемещения по холсту
                 Point lastMousePosition = new Point();
                 bool isDragging = false;
 
@@ -263,7 +278,6 @@ namespace STEP_JSON_Application_for_ASKON
                         Point currentPosition = Mouse.GetPosition(schemaCanvas);
                         Vector delta = currentPosition - lastMousePosition;
                         lastMousePosition = currentPosition;
-
                         translateTransform.X += delta.X;
                         translateTransform.Y += delta.Y;
                     }
@@ -295,11 +309,10 @@ namespace STEP_JSON_Application_for_ASKON
                         double scaleFactor = e.Delta > 0 ? 1.1 : 0.9;
                         double newScaleX = scaleTransform.ScaleX * scaleFactor;
                         double newScaleY = scaleTransform.ScaleY * scaleFactor;
-
                         double viewWidth = schemaCanvas.ActualWidth;
                         double viewHeight = schemaCanvas.ActualHeight;
-                        double minScaleX = viewWidth / schemaCanvas.Width;
-                        double minScaleY = viewHeight / schemaCanvas.Height;
+                        double minScaleX = Math.Max(viewWidth / schemaCanvas.Width, 0.5);
+                        double minScaleY = Math.Max(viewHeight / schemaCanvas.Height, 0.5);
                         double minScale = Math.Max(minScaleX, minScaleY);
 
                         if (newScaleX >= minScale && newScaleX <= 5)
@@ -316,14 +329,13 @@ namespace STEP_JSON_Application_for_ASKON
             }
             else
             {
-                // Частичное обновление: обновляем только текст в существующих узлах
                 foreach (var levelEntry in levels.OrderBy(l => l.Key))
                 {
                     foreach (var (nodeId, nodeInstance) in levelEntry.Value)
                     {
                         string type = nodeInstance["type"]?.ToString() ?? "unknown";
-                        string label = GetFriendlyLabel(nodeId, nodeInstance, instances);
-                        UpdateEllipseLabel(nodeId, label, schemaCanvas);
+                        var labelInfo = GetFriendlyLabel(nodeId, nodeInstance, instances);
+                        UpdateEllipseLabel(nodeId, labelInfo, schemaCanvas);
                     }
                 }
             }
@@ -331,10 +343,15 @@ namespace STEP_JSON_Application_for_ASKON
 
         private string GetQuantityLabel(string quantityId, List<JObject> instances)
         {
-            if (string.IsNullOrEmpty(quantityId)) return "";
+            if (string.IsNullOrEmpty(quantityId))
+                return "";
 
             var quantity = instances.FirstOrDefault(i => i["id"]?.ToString() == quantityId && i["type"]?.ToString() == "measure_with_unit");
-            if (quantity == null) return "";
+            if (quantity == null)
+            {
+                Console.WriteLine($"GetQuantityLabel: Quantity not found for id={quantityId}");
+                return "";
+            }
 
             string value = quantity["attributes"]?["value_component"]?.ToString() ?? "";
             return value.Trim();
@@ -342,162 +359,249 @@ namespace STEP_JSON_Application_for_ASKON
 
         private string GetUnitForQuantity(string quantityId, List<JObject> instances)
         {
-            if (string.IsNullOrEmpty(quantityId)) return "шт.";
+            if (string.IsNullOrEmpty(quantityId))
+                return "шт.";
 
             var quantity = instances.FirstOrDefault(i => i["id"]?.ToString() == quantityId && i["type"]?.ToString() == "measure_with_unit");
-            if (quantity == null) return "шт.";
+            if (quantity == null)
+            {
+                Console.WriteLine($"GetUnitForQuantity: Quantity not found for id={quantityId}");
+                return "шт.";
+            }
 
             string unitId = quantity["attributes"]?["unit_component"]?.ToString();
             var unit = unitId != null ? instances.FirstOrDefault(i => i["id"]?.ToString() == unitId && i["type"]?.ToString() == "context_dependent_unit") : null;
             string unitName = unit?["attributes"]?["id"]?.ToString() ?? "шт.";
-
             return unitName;
         }
 
-        private string GetFriendlyLabel(string id, JObject instance, List<JObject> instances)
+        private LabelInfo GetFriendlyLabel(string id, JObject instance, List<JObject> instances)
         {
             string type = instance["type"]?.ToString() ?? "unknown";
-            string label = id;
+            string defId = "Неизвестно";
+            string name = "";
+            string version = "";
 
             if (type.Contains("product_definition"))
             {
-                string defId = instance["attributes"]?["id"]?.ToString() ?? "Unknown Definition";
+                defId = instance["attributes"]?["id"]?.ToString() ?? "Unknown Definition";
                 string formationId = instance["attributes"]?["formation"]?.ToString();
 
                 if (!string.IsNullOrEmpty(formationId))
                 {
                     var formation = instances.FirstOrDefault(i => i["id"]?.ToString() == formationId);
                     string productId = formation?["attributes"]?["of_product"]?.ToString();
-                    string version = formation?["attributes"]?["id"]?.ToString() ?? "Unknown Version";
+                    version = formation?["attributes"]?["id"]?.ToString() ?? "";
 
                     if (!string.IsNullOrEmpty(productId))
                     {
                         var product = instances.FirstOrDefault(i => i["id"]?.ToString() == productId);
-                        string productCode = product?["attributes"]?["id"]?.ToString() ?? "Unknown Product";
-                        string productName = product?["attributes"]?["name"]?.ToString() ?? "";
-
-                        label = $"{defId} {productCode} {productName} версия {version}".Trim();
+                        defId = product?["attributes"]?["id"]?.ToString() ?? defId;
+                        name = product?["attributes"]?["name"]?.ToString() ?? "";
                     }
-                    else
-                    {
-                        label = $"{defId} версия {version}";
-                    }
-                }
-                else
-                {
-                    label = defId;
                 }
             }
             else if (type == "eskd_product")
             {
-                string productCode = instance["attributes"]?["id"]?.ToString() ?? "Unknown Product";
-                string productName = instance["attributes"]?["name"]?.ToString() ?? "";
-                label = $"{productCode} {productName}".Trim();
+                defId = instance["attributes"]?["id"]?.ToString() ?? "Unknown Product";
+                name = instance["attributes"]?["name"]?.ToString() ?? "";
             }
             else if (type == "organization")
             {
-                label = instance["attributes"]?["name"]?.ToString() ?? "Организация";
+                defId = instance["attributes"]?["id"]?.ToString() ?? "Unknown Organization";
+                name = instance["attributes"]?["name"]?.ToString() ?? "Организация";
             }
 
-            return label;
+            return new LabelInfo { Id = defId, Name = name, Version = version };
         }
 
         private string CleanLabel(string label)
         {
-            if (string.IsNullOrEmpty(label)) return label;
+            if (string.IsNullOrEmpty(label))
+                return label;
 
-            // Удаляем "версия ..." и всё после неё
-            int versionIndex = label.LastIndexOf("версия", StringComparison.OrdinalIgnoreCase);
-            string baseLabel = versionIndex >= 0 ? label.Substring(0, versionIndex).Trim() : label;
+            string cleaned = label.Trim();
+            if (cleaned.StartsWith("id:", StringComparison.OrdinalIgnoreCase))
+                cleaned = cleaned.Substring(3).Trim();
+            else if (cleaned.StartsWith("name:", StringComparison.OrdinalIgnoreCase))
+                cleaned = cleaned.Substring(5).Trim();
+            else if (cleaned.StartsWith("версия:", StringComparison.OrdinalIgnoreCase))
+                cleaned = cleaned.Substring(7).Trim();
 
-            // Разделяем на части
-            string[] parts = baseLabel.Split(new[] { " " }, StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length < 2) return baseLabel;
-
-            // Проверяем, является ли первая часть кодом (например, содержит точки и минимум 3 сегмента)
-            string code = parts[0];
-            if (code.Contains(".") && code.Split('.').Length >= 3)
-            {
-                // Собираем оставшиеся части как имя
-                string name = string.Join(" ", parts.Skip(1)).Trim();
-                // Удаляем code из начала name, если он там есть
-                if (name.StartsWith(code, StringComparison.OrdinalIgnoreCase))
-                {
-                    name = name.Substring(code.Length).Trim();
-                }
-                return $"{code} {name}".Trim();
-            }
-
-            return baseLabel;
+            cleaned = cleaned.Replace("\"", "\\\"").Replace("\\", "\\\\");
+            return cleaned;
         }
 
-        private UIElement CreateStyledEllipse(string id, string type, string label, List<JObject> instances)
+        private UIElement CreateStyledEllipse(string id, string type, LabelInfo labelInfo, List<JObject> instances)
         {
-            Console.WriteLine($"CreateStyledEllipse: id={id}, type={type}, label='{label}'");
-            var textBox = new TextBox
+            Console.WriteLine($"CreateStyledEllipse: id={id}, type={type}, labelInfo=({labelInfo.Id}, {labelInfo.Name}, {labelInfo.Version})");
+
+            var stackPanel = new StackPanel
             {
-                Text = label,
-                TextWrapping = TextWrapping.Wrap,
-                TextAlignment = TextAlignment.Center,
-                FontSize = 12,
-                MaxWidth = NodeWidth - 20,
-                VerticalAlignment = VerticalAlignment.Center,
+                Orientation = Orientation.Vertical,
                 HorizontalAlignment = HorizontalAlignment.Center,
-                Background = Brushes.White,
-                BorderBrush = null, // Убираем цвет границы
-                BorderThickness = new Thickness(0), // Убираем толщину границы
-                Tag = id
+                VerticalAlignment = VerticalAlignment.Center,
+                MaxWidth = NodeWidth - 20,
+                Margin = new Thickness(2)
             };
 
-            textBox.LostFocus += (sender, e) =>
+            var idTextBox = new TextBox
             {
-                Console.WriteLine($"LostFocus: id={id}, isUpdating={isUpdating}, text='{textBox.Text}'");
-                if (isUpdating)
-                    return;
-
-                if (sender is TextBox tb)
-                {
-                    string cleanedText = CleanLabel(tb.Text);
-                    if (cleanedText != GetFriendlyLabel(id, instances.FirstOrDefault(i => i["id"]?.ToString() == id), instances))
-                    {
-                        Console.WriteLine($"LostFocus: Text changed, calling UpdateJsonContent with newLabel='{cleanedText}'");
-                        isUpdating = true;
-                        jsonManager.UpdateJsonContent(id, cleanedText, type, instances);
-                        isUpdating = false;
-                    }
-                    else
-                    {
-                        Console.WriteLine("LostFocus: Text unchanged or cleaned, skipping UpdateJsonContent");
-                    }
-                }
+                Text = labelInfo.Id,
+                FontSize = 12,
+                Foreground = Brushes.Black,
+                Background = null,
+                BorderBrush = null,
+                TextWrapping = TextWrapping.Wrap,
+                TextAlignment = TextAlignment.Left,
+                Tag = "id:" + id
+            };
+            var idLabel = new TextBlock
+            {
+                Text = "id:",
+                FontSize = 12,
+                Foreground = new SolidColorBrush(Colors.Gray) { Opacity = 0.5 },
+                IsHitTestVisible = false,
+                Margin = new Thickness(0, 0, 2, 0),
+                Visibility = Visibility.Collapsed
             };
 
-            textBox.KeyDown += (sender, e) =>
+            var nameTextBox = new TextBox
             {
-                if (e.Key == Key.Enter || e.Key == Key.Return)
+                Text = labelInfo.Name,
+                FontSize = 12,
+                Foreground = Brushes.Black,
+                Background = null,
+                BorderBrush = null,
+                TextWrapping = TextWrapping.Wrap,
+                TextAlignment = TextAlignment.Left,
+                Tag = "name:" + id
+            };
+            var nameLabel = new TextBlock
+            {
+                Text = "name:",
+                FontSize = 12,
+                Foreground = new SolidColorBrush(Colors.Gray) { Opacity = 0.5 },
+                IsHitTestVisible = false,
+                Margin = new Thickness(0, 0, 2, 0),
+                Visibility = Visibility.Collapsed
+            };
+
+            var versionTextBox = new TextBox
+            {
+                Text = labelInfo.Version,
+                FontSize = 12,
+                Foreground = Brushes.Black,
+                Background = null,
+                BorderBrush = null,
+                TextWrapping = TextWrapping.Wrap,
+                TextAlignment = TextAlignment.Left,
+                Tag = "version:" + id
+            };
+            var versionLabel = new TextBlock
+            {
+                Text = "version:",
+                FontSize = 12,
+                Foreground = new SolidColorBrush(Colors.Gray) { Opacity = 0.5 },
+                IsHitTestVisible = false,
+                Margin = new Thickness(0, 0, 2, 0),
+                Visibility = Visibility.Collapsed
+            };
+
+            double fontSize = 12;
+            stackPanel.Children.Add(CreateLabelPanel(idLabel, idTextBox));
+            stackPanel.Children.Add(CreateLabelPanel(nameLabel, nameTextBox));
+            stackPanel.Children.Add(CreateLabelPanel(versionLabel, versionTextBox));
+
+            stackPanel.Measure(new Size(NodeWidth - 20, NodeHeight - 20));
+            while (stackPanel.DesiredSize.Height > NodeHeight - 20 && fontSize > 8)
+            {
+                fontSize -= 0.5;
+                idTextBox.FontSize = fontSize;
+                nameTextBox.FontSize = fontSize;
+                versionTextBox.FontSize = fontSize;
+                idLabel.FontSize = fontSize;
+                nameLabel.FontSize = fontSize;
+                versionLabel.FontSize = fontSize;
+                stackPanel.Measure(new Size(NodeWidth - 20, NodeHeight - 20));
+            }
+
+            void AddTextBoxHandlers(TextBox textBox, TextBlock label, string field)
+            {
+                textBox.GotFocus += (sender, e) =>
                 {
-                    Console.WriteLine($"KeyDown (Enter): id={id}, isUpdating={isUpdating}, text='{textBox.Text}'");
-                    if (isUpdating)
+                    label.Visibility = Visibility.Visible;
+                    Console.WriteLine($"GotFocus: id={id}, field={field}, currentText={textBox.Text}");
+                };
+
+                textBox.LostFocus += (sender, e) =>
+                {
+                    label.Visibility = Visibility.Collapsed;
+                    if (isUpdating || (DateTime.Now - lastUpdateTime).TotalMilliseconds < 500)
                         return;
 
-                    if (sender is TextBox tb)
+                    isUpdating = true;
+                    lastUpdateTime = DateTime.Now;
+                    try
                     {
-                        string cleanedText = CleanLabel(tb.Text);
-                        if (cleanedText != GetFriendlyLabel(id, instances.FirstOrDefault(i => i["id"]?.ToString() == id), instances))
+                        string cleanedText = CleanLabel(textBox.Text);
+                        var currentLabel = GetFriendlyLabel(id, instances.FirstOrDefault(i => i["id"]?.ToString() == id), instances);
+                        string currentValue = field == "id" ? currentLabel.Id : field == "name" ? currentLabel.Name : currentLabel.Version;
+
+                        if (cleanedText != currentValue)
                         {
-                            Console.WriteLine($"KeyDown: Text changed, calling UpdateJsonContent with newLabel='{cleanedText}'");
-                            isUpdating = true;
-                            jsonManager.UpdateJsonContent(id, cleanedText, type, instances);
+                            Console.WriteLine($"LostFocus: id={id}, field={field}, newValue='{cleanedText}', currentValue='{currentValue}'");
+                            jsonManager.UpdateJsonContent(id, field, cleanedText, instances);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"LostFocus: Error updating JSON for id={id}, field={field}: {ex.Message}");
+                    }
+                    finally
+                    {
+                        isUpdating = false;
+                    }
+                };
+
+                textBox.KeyDown += (sender, e) =>
+                {
+                    if (e.Key == Key.Enter || e.Key == Key.Return)
+                    {
+                        label.Visibility = Visibility.Collapsed;
+                        if (isUpdating || (DateTime.Now - lastUpdateTime).TotalMilliseconds < 500)
+                            return;
+
+                        isUpdating = true;
+                        lastUpdateTime = DateTime.Now;
+                        try
+                        {
+                            string cleanedText = CleanLabel(textBox.Text);
+                            var currentLabel = GetFriendlyLabel(id, instances.FirstOrDefault(i => i["id"]?.ToString() == id), instances);
+                            string currentValue = field == "id" ? currentLabel.Id : field == "name" ? currentLabel.Name : currentLabel.Version;
+
+                            if (cleanedText != currentValue)
+                            {
+                                Console.WriteLine($"KeyDown: id={id}, field={field}, newValue='{cleanedText}', currentValue='{currentValue}'");
+                                jsonManager.UpdateJsonContent(id, field, cleanedText, instances);
+                                Keyboard.ClearFocus();
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"KeyDown: Error updating JSON for id={id}, field={field}: {ex.Message}");
+                        }
+                        finally
+                        {
                             isUpdating = false;
                         }
-                        else
-                        {
-                            Console.WriteLine("KeyDown: Text unchanged or cleaned, skipping UpdateJsonContent");
-                        }
-                        Keyboard.ClearFocus();
                     }
-                }
-            };
+                };
+            }
+
+            AddTextBoxHandlers(idTextBox, idLabel, "id");
+            AddTextBoxHandlers(nameTextBox, nameLabel, "name");
+            AddTextBoxHandlers(versionTextBox, versionLabel, "version");
 
             var ellipse = new Ellipse
             {
@@ -515,33 +619,78 @@ namespace STEP_JSON_Application_for_ASKON
                 Tag = id
             };
             container.Children.Add(ellipse);
-            container.Children.Add(textBox);
+            container.Children.Add(stackPanel);
 
-            textBox.Measure(new Size(NodeWidth - 20, NodeHeight));
-            double textWidth = textBox.DesiredSize.Width;
-            double textHeight = textBox.DesiredSize.Height;
-            Canvas.SetLeft(textBox, (NodeWidth - textWidth) / 2);
-            Canvas.SetTop(textBox, (NodeHeight - textHeight) / 2);
+            Canvas.SetLeft(stackPanel, (NodeWidth - stackPanel.DesiredSize.Width) / 2);
+            Canvas.SetTop(stackPanel, (NodeHeight - stackPanel.DesiredSize.Height) / 2);
 
             return container;
         }
 
-        private void UpdateEllipseLabel(string id, string label, Canvas schemaCanvas)
+        private StackPanel CreateLabelPanel(TextBlock label, TextBox textBox)
         {
-            Console.WriteLine($"UpdateEllipseLabel: id={id}, label='{label}'");
+            var panel = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                Margin = new Thickness(2)
+            };
+            panel.Children.Add(label);
+            panel.Children.Add(textBox);
+            return panel;
+        }
+
+        private void UpdateEllipseLabel(string id, LabelInfo labelInfo, Canvas schemaCanvas)
+        {
+            Console.WriteLine($"UpdateEllipseLabel: id={id}, labelInfo=({labelInfo?.Id}, {labelInfo?.Name}, {labelInfo?.Version})");
             var container = schemaCanvas.Children.OfType<Canvas>().FirstOrDefault(c => c.Tag?.ToString() == id);
             if (container != null)
             {
-                var textBox = container.Children.OfType<TextBox>().FirstOrDefault();
-                if (textBox != null)
+                var stackPanel = container.Children.OfType<StackPanel>().FirstOrDefault();
+                if (stackPanel != null)
                 {
-                    textBox.Text = label;
-                    textBox.Tag = id;
-                    textBox.Measure(new Size(NodeWidth - 20, NodeHeight));
-                    double textWidth = textBox.DesiredSize.Width;
-                    double textHeight = textBox.DesiredSize.Height;
-                    Canvas.SetLeft(textBox, (NodeWidth - textWidth) / 2);
-                    Canvas.SetTop(textBox, (NodeHeight - textHeight) / 2);
+                    var textBoxes = stackPanel.Children.OfType<StackPanel>()
+                        .SelectMany(p => p.Children.OfType<TextBox>())
+                        .ToList();
+
+                    var idTextBox = textBoxes.FirstOrDefault(tb => tb.Tag.ToString().StartsWith("id:"));
+                    var nameTextBox = textBoxes.FirstOrDefault(tb => tb.Tag.ToString().StartsWith("name:"));
+                    var versionTextBox = textBoxes.FirstOrDefault(tb => tb.Tag.ToString().StartsWith("version:"));
+
+                    if (idTextBox != null && labelInfo.Id != null)
+                    {
+                        idTextBox.Text = labelInfo.Id;
+                        Console.WriteLine($"UpdateEllipseLabel: idTextBox updated to '{labelInfo.Id}'");
+                    }
+                    if (nameTextBox != null && labelInfo.Name != null)
+                    {
+                        nameTextBox.Text = labelInfo.Name;
+                        Console.WriteLine($"UpdateEllipseLabel: nameTextBox updated to '{labelInfo.Name}'");
+                    }
+                    if (versionTextBox != null)
+                    {
+                        versionTextBox.Text = labelInfo?.Version ?? "";
+                        versionTextBox.Visibility = string.IsNullOrEmpty(labelInfo?.Version) ? Visibility.Collapsed : Visibility.Visible;
+                        Console.WriteLine($"UpdateEllipseLabel: versionTextBox updated to '{labelInfo?.Version}'");
+                    }
+
+                    double fontSize = 12;
+                    stackPanel.Measure(new Size(NodeWidth - 20, NodeHeight - 20));
+                    while (stackPanel.DesiredSize.Height > NodeHeight - 20 && fontSize > 8)
+                    {
+                        fontSize -= 0.5;
+                        if (idTextBox != null) idTextBox.FontSize = fontSize;
+                        if (nameTextBox != null) nameTextBox.FontSize = fontSize;
+                        if (versionTextBox != null) versionTextBox.FontSize = fontSize;
+                        stackPanel.Children.OfType<StackPanel>().ToList().ForEach(p =>
+                        {
+                            var label = p.Children.OfType<TextBlock>().FirstOrDefault();
+                            if (label != null) label.FontSize = fontSize;
+                        });
+                        stackPanel.Measure(new Size(NodeWidth - 20, NodeHeight - 20));
+                    }
+
+                    Canvas.SetLeft(stackPanel, (NodeWidth - stackPanel.DesiredSize.Width) / 2);
+                    Canvas.SetTop(stackPanel, (NodeHeight - stackPanel.DesiredSize.Height) / 2);
                 }
             }
         }
