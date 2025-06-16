@@ -1,18 +1,73 @@
-## Software for Working with Electronic Structure in STEP-JSON Format
+## Программное обеспечение для работы с электронной структурой изделия в формате STEP-JSON
 
-This software is designed to meet the essential requirements for reading, modifying, and saving electronic structure data in STEP-JSON format. It ensures compliance with the GOST R 2.525 – 20XX standard and provides a user-friendly interface for efficient data management.
+Это программное обеспечение разработано для удовлетворения основных требований к чтению, изменению и сохранению данных электронной структуры в формате STEP-JSON. Оно обеспечивает соответствие стандарту ГОСТ Р 2.525 – 20XX и предлагает удобный интерфейс для эффективного управления данными.
 
-## Features
 
-- **Read STEP-JSON Files**: Import electronic structure data from STEP-JSON files.
-- **Save in STEP-JSON Format**: Ensure that saved data maintains the correct structure in STEP-JSON format.
-- **Data Structure Validation**: Check the data structure for compliance with the GOST R 2.525 – 20XX standard.
-- **Error Notifications**: Generate and display notifications for any errors or discrepancies found in the data.
-- **Intuitive Interface**: Enjoy a user-friendly interface for seamless interaction.
-- **Text View of Data**: View loaded data in a text format for easy inspection.
-- **Graphical Representation**: Build graphical diagrams of the electronic structure of the product.
-- **Attribute Editing**: Edit object attributes as needed.
-- **Version Control**: Support for versioning of the working file, allowing switching between different structure versions.
-- **Object Management**: Functions for adding new objects, deleting existing ones, and searching for objects.
-- **Cross-Platform Availability**: Accessible on various operating systems (Windows, macOS, Linux).
-- **Built-in Documentation**: Comprehensive documentation describing the functionality and usage instructions of the application.
+## Особенности
+
+- **Чтение файлов STEP-JSON**: Импорт данных электронной структуры из файлов STEP-JSON.
+- **Сохранение в формате STEP-JSON**: Обеспечение правильной структуры сохраненных данных в формате STEP-JSON.
+- **Валидация структуры данных**: Проверка структуры данных на соответствие стандарту ГОСТ Р 2.525 – 20XX.
+- **Уведомления об ошибках**: Генерация и отображение уведомлений о любых ошибках или несоответствиях, обнаруженных в данных.
+- **Интуитивно понятный интерфейс**: Удобный интерфейс для бесшовного взаимодействия.
+- **Текстовый просмотр данных**: Просмотр загруженных данных в текстовом формате для легкой проверки.
+- **Графическое представление**: Построение графических диаграмм электронной структуры изделия.
+- **Редактирование атрибутов**: Возможность редактирования атрибутов объектов по мере необходимости.
+- **Управление версиями**: Поддержка версионности рабочего файла, позволяющая переключаться между различными версиями структуры.
+- **Управление объектами**: Функции для добавления новых объектов, удаления существующих и поиска объектов.
+- **Кроссплатформенная доступность**: Доступно на различных операционных системах (Windows, macOS, Linux).
+- **Встроенная документация**: Полная документация, описывающая функциональность и инструкции по использованию приложения.
+
+
+# Проблема
+
+Основная проблема заключается в отсутствии стандартизированного обмена структурой изделия. В большинстве инженерных систем данные о составе изделия хранятся в собственных форматах (таблицы БД, внутренние XML, API). Эти данные:
+
+- не совместимы между системами без дополнительной обработки;
+- могут не соответствовать требованиям ГОСТ на электронные структуры;
+- не пригодны для архивации, визуализации, интеграции в ERP/PLM без промежуточной адаптации.
+
+
+# Решение
+
+Закономерным решением является реализация автоматизированной выгрузки структуры изделия в STEP-JSON формат по ГОСТ.
+
+Наше приложение:
+
+- Преобразуют данные в объектную структуру по ГОСТ Р 2.525.
+- Сохраняют в формат STEP-JSON, пригодный для:
+  - обмена между CAD/PLM-системами;
+  - последующей визуализации;
+  - нормативного архивирования;
+  - валидации по ГОСТ;
+  - интеграции с другими стандартами (например, ISO 10303/STEP).
+- Представляют структуру изделия в удобном для восприятия виде (схема, текст, дерево).
+
+
+# Целевая выгода
+
+- **Совместимость**: единый формат между системами (CAD, PLM, PDM, ERP).
+- **Соответствие ГОСТ**: нормативно правильное электронное представление состава.
+- **Наглядность**: генерация древовидной структуры или схемы изделия.
+- **Автоматизация**: устранение ручного экспорта/перевода/структурирования.
+
+
+# Область применения
+
+- Машиностроение и приборостроение;
+- Архивация и нормативная документация;
+- Интеграция между разными инженерными системами;
+- Инжиниринг и цифровое проектирование (цифровые двойники);
+- Валидация и проверка на соответствие ГОСТ;
+- Образование и подготовка проектной документации. 😊
+
+
+![image](https://github.com/user-attachments/assets/d373a6fb-a3c4-4de3-a85f-5074125bcdbf)
+
+![image](https://github.com/user-attachments/assets/82349f90-a276-4cea-9be2-01b3a3b83950)
+
+![image](https://github.com/user-attachments/assets/a0928a08-d43b-4e85-b1df-0d29b790f73f)
+
+![image](https://github.com/user-attachments/assets/bbff93ff-2157-453b-836c-341d1c0b5971)
+
+![image](https://github.com/user-attachments/assets/42d9c088-2c4c-4cc1-a8ae-c2d448b7a771)
