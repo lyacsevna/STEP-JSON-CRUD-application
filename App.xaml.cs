@@ -8,9 +8,6 @@ using System.Windows;
 
 namespace STEP_JSON_Application_for_ASKON
 {
-    /// <summary>
-    /// Логика взаимодействия для App.xaml
-    /// </summary>
     public partial class App : Application
     {
     }

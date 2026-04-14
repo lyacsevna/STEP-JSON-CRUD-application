@@ -23,7 +23,7 @@ namespace STEP_JSON_Application_for_ASKON
         private readonly JsonManager jsonManager;
         private readonly TreeManager treeManager;
         private readonly SchemaManager schemaManager;
-        public SchemaManager SchemaManager => schemaManager; // Public property to access schemaManager
+        public SchemaManager SchemaManager => schemaManager;
         #endregion
 
         #region Конструктор
@@ -31,15 +31,12 @@ namespace STEP_JSON_Application_for_ASKON
         {
             InitializeComponent();
             undoStack.Push(lastText);
-
             SchemaCanvas.MouseWheel += SchemaCanvas_MouseWheel;
             SchemaCanvas.RenderTransform = new ScaleTransform(scale, scale);
 
             jsonManager = new JsonManager(this);
             treeManager = new TreeManager();
-            schemaManager = new SchemaManager(jsonManager); // Передаём JsonManager в SchemaManager
-
-            // Подключаем обработчики TextChanged для StepJsonTextBox
+            schemaManager = new SchemaManager(jsonManager);
             StepJsonTextBox.TextChanged += StepJsonTextBox_TextChanged;
             StepJsonTextBox.TextChanged += UpdateUndoStackOnTextChange;
         }
@@ -60,14 +57,12 @@ namespace STEP_JSON_Application_for_ASKON
 
                 transform.ScaleX = scale;
                 transform.ScaleY = scale;
-
                 e.Handled = true;
             }
         }
 
         private void StepJsonTextBox_TextChanged(object sender, EventArgs e)
         {
-            // Проверяем валидность JSON и обновляем схему
             string fileContent = StepJsonTextBox.Text;
             string filePath = DefaultFileNameTextBlock.Text;
             if (!string.IsNullOrEmpty(fileContent))
@@ -83,13 +78,6 @@ namespace STEP_JSON_Application_for_ASKON
                 undoStack.Push(lastText);
                 lastText = StepJsonTextBox.Text;
             }
-        }
-
-        public void TestValidButton_Click(object sender, RoutedEventArgs e)
-        {
-            string filePath = DefaultFileNameTextBlock.Text;
-            string fileContent = StepJsonTextBox.Text;
-            jsonManager.TestValidCurrentFileContent(fileContent, filePath);
         }
 
         private void LoadedFilesListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -199,7 +187,6 @@ namespace STEP_JSON_Application_for_ASKON
         {
             if (undoStack.Count > 1)
             {
-                // Отключаем обработчики, чтобы избежать рекурсии
                 StepJsonTextBox.TextChanged -= StepJsonTextBox_TextChanged;
                 StepJsonTextBox.TextChanged -= UpdateUndoStackOnTextChange;
 
@@ -207,7 +194,6 @@ namespace STEP_JSON_Application_for_ASKON
                 StepJsonTextBox.Text = undoStack.Peek();
                 lastText = StepJsonTextBox.Text;
 
-                // Подключаем обработчики обратно
                 StepJsonTextBox.TextChanged += UpdateUndoStackOnTextChange;
                 StepJsonTextBox.TextChanged += StepJsonTextBox_TextChanged;
             }

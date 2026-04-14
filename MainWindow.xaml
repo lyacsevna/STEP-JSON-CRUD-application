@@ -19,7 +19,6 @@
         </Style>
 
 
-        <!--СТИЛИ ДЛЯ КНОПОК ОБЫЧНЫЕ-->
         <Style TargetType="Button">
             <Setter Property="Margin" Value="5"/>
             <Setter Property="MinHeight" Value="30"/>
@@ -42,7 +41,6 @@
 
 
     <Grid>
-        <!--Общие настройки основной разметки-->
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="4*"/>
@@ -54,7 +52,6 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!--Грид для элементов верхней панели (зеленый фон)-->
         <Grid Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Background="#00796B">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
@@ -70,7 +67,6 @@
                    Grid.Column="0"
                    VerticalAlignment="Center" Height="40"/>
 
-            <!--сепаратор вертикальный-->
             <Rectangle VerticalAlignment="Stretch" Grid.Column="1" Width="1" Margin="2" Stroke="White" />
 
 
@@ -84,7 +80,6 @@
 
         </Grid>
 
-        <!-- Меню -->
         <Menu x:Name="Menu" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" VerticalAlignment="Top" Background="#E0EFED" Padding="5">
 
 
@@ -118,10 +113,7 @@
                 <MenuItem Header="Сбросить масштаб" InputGestureText="Ctrl + 0"/>
             </MenuItem>
             <MenuItem Header="Справка" Click="InformationMenuItem_Click"/>
-            <MenuItem Header="ТЕСТОВАЯ ПРОВЕРКА ФАЙЛА" Click="TestValidButton_Click" HorizontalAlignment="Right"/>
         </Menu>
-
-        <!-- Левая панель с загруженными файлами -->
 
         <Grid Grid.Column="0" Grid.Row="2">
             <Grid.RowDefinitions>
@@ -152,7 +144,6 @@
             </StackPanel>
         </Grid>
 
-        <!-- Основная панель с вкладками -->
         <Grid Grid.Column="1" Grid.Row="2" Margin="10" x:Name="MainGrid">
 
             <Grid.RowDefinitions>

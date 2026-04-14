@@ -127,7 +127,7 @@ namespace STEP_JSON_Application_for_ASKON
                 IsExpanded = true,
                 FontSize = 14,
                 Margin = new Thickness(0, 5, 0, 5),
-                Tag = productId // Для идентификации узла
+                Tag = productId
             };
 
             var components = instances
@@ -386,7 +386,7 @@ namespace STEP_JSON_Application_for_ASKON
     {
         public string Name { get; set; }
         public string Value { get; set; }
-        public string Tag { get; set; } // Для хранения id
+        public string Tag { get; set; }
         public List<TreeNode> Children { get; set; } = new List<TreeNode>();
         public bool IsExpanded { get; set; }
         public BitmapImage ImageSource { get; set; }
